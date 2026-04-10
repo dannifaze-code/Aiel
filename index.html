@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aiel AI — A fully free, autonomous AI chatbot. Generates code, images, and videos. Works offline. No API key required." />
+  <meta name="theme-color" content="#6c63ff" />
+  <meta property="og:title"       content="Aiel AI — Free Autonomous AI Assistant" />
+  <meta property="og:description" content="Chat, code, create — no API key, works offline, always learning." />
+  <meta property="og:type"        content="website" />
+
+  <title>Aiel AI — Free Autonomous AI Assistant</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     LANDING PAGE
+════════════════════════════════════════════════════════════════════════ -->
+<div id="landing-page">
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-logo">
+      <div class="logo-icon">🤖</div>
+      <span>Aiel <span class="gradient-text">AI</span></span>
+    </div>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#how-it-works" class="nav-link">How it works</a>
+      <a href="#offline-section" class="nav-link">Offline</a>
+      <button class="nav-cta cta-launch">Launch App →</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section id="hero">
+    <canvas id="neural-canvas" aria-hidden="true"></canvas>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        Now live — No API key required
+      </div>
+
+      <h1 class="hero-title">
+        Meet <span class="gradient-text">Aiel</span> —<br />
+        The AI That Learns<br />From You
+      </h1>
+
+      <p class="hero-sub">
+        A fully autonomous AI chatbot that codes, generates images &amp; videos,
+        and keeps getting smarter — all inside your browser, for free, forever.
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn-primary cta-launch">
+          🚀 Start Chatting Free
+        </button>
+        <a href="#features" class="btn-secondary">
+          ✨ Explore Features
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-number">100%</span>
+          <span class="stat-label">Free Forever</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">0</span>
+          <span class="stat-label">API Keys Needed</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">∞</span>
+          <span class="stat-label">Learning Capacity</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">⚡</span>
+          <span class="stat-label">Runs Offline</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="section-header">
+      <span class="section-tag">Features</span>
+      <h2 class="section-title">Everything You Need, <span class="gradient-text">Built In</span></h2>
+      <p class="section-sub">No plugins, no sign-ups, no fees. Just powerful AI capabilities right in your browser.</p>
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#6c63ff22,#6c63ff44)">💬</div>
+        <h3 class="feature-title">Intelligent Chat</h3>
+        <p class="feature-desc">Natural conversation on any topic. Aiel understands context, remembers your preferences, and gets smarter with every message.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#00d4aa22,#00d4aa44)">💻</div>
+        <h3 class="feature-title">Code Generation</h3>
+        <p class="feature-desc">Generate, explain, debug, and refactor code in any language — JavaScript, Python, Java, Rust, SQL, HTML, CSS, and more.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#ff6b9d22,#ff6b9d44)">🎨</div>
+        <h3 class="feature-title">Image Creation</h3>
+        <p class="feature-desc">Generate stunning visuals from text prompts. Create abstract art, patterns, and scenes — all rendered locally in your browser.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#ffd70022,#ffd70044)">🎬</div>
+        <h3 class="feature-title">Video Generation</h3>
+        <p class="feature-desc">Animate images with the Ken Burns effect, create slideshows, or generate animated scenes from text descriptions.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#6c63ff22,#00d4aa44)">🧠</div>
+        <h3 class="feature-title">Continuous Learning</h3>
+        <p class="feature-desc">Aiel stores patterns from every conversation in your browser's IndexedDB. The more you interact, the smarter it becomes.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#ff6b9d22,#ffd70044)">🎤</div>
+        <h3 class="feature-title">Voice Input</h3>
+        <p class="feature-desc">Speak your requests using the Web Speech API. Hands-free interaction for maximum productivity and accessibility.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#00d4aa22,#6c63ff44)">📱</div>
+        <h3 class="feature-title">PWA — Install Anywhere</h3>
+        <p class="feature-desc">Install Aiel as a Progressive Web App on any device. Works like a native app on desktop, iOS, and Android.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#6c63ff22,#ff6b9d44)">🔒</div>
+        <h3 class="feature-title">Privacy First</h3>
+        <p class="feature-desc">Everything runs locally in your browser. Your conversations, learned patterns, and generated content never leave your device.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how-it-works">
+    <div class="section-header">
+      <span class="section-tag">How It Works</span>
+      <h2 class="section-title">Simple, Powerful, <span class="gradient-text">Intelligent</span></h2>
+      <p class="section-sub">Aiel uses a multi-layer AI strategy to give you the best experience in any environment.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3 class="step-title">Open &amp; Launch</h3>
+        <p class="step-desc">Open index.html in any modern browser. No installation, no sign-up, no API keys ever.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3 class="step-title">Choose a Mode</h3>
+        <p class="step-desc">Switch between Chat, Code, Image, and Video modes using the toolbar.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3 class="step-title">Interact &amp; Create</h3>
+        <p class="step-desc">Type or speak your requests. Aiel responds instantly with text, code, images, or videos.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <h3 class="step-title">Aiel Learns</h3>
+        <p class="step-desc">Every interaction teaches Aiel. Patterns are stored locally and used to improve future responses.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Offline section -->
+  <section id="offline-section">
+    <div class="section-header">
+      <span class="section-tag">Always Available</span>
+      <h2 class="section-title">Works <span class="gradient-text">Offline</span> Too</h2>
+    </div>
+
+    <div class="offline-card">
+      <div class="offline-text">
+        <h2>No Internet? No Problem.</h2>
+        <p>Aiel is a Progressive Web App with a Service Worker that caches everything you need. Once loaded, it works completely offline.</p>
+        <div class="offline-features">
+          <div class="offline-feature">
+            <div class="check">✓</div>
+            <span>Full chat functionality offline</span>
+          </div>
+          <div class="offline-feature">
+            <div class="check">✓</div>
+            <span>Code generation without internet</span>
+          </div>
+          <div class="offline-feature">
+            <div class="check">✓</div>
+            <span>Image &amp; video creation offline</span>
+          </div>
+          <div class="offline-feature">
+            <div class="check">✓</div>
+            <span>Learned patterns always available</span>
+          </div>
+          <div class="offline-feature">
+            <div class="check">✓</div>
+            <span>Install as a native app</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="offline-visual">
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span>Online — Full AI engine active</span>
+        </div>
+        <div class="status-pill offline">
+          <div class="status-dot"></div>
+          <span>Offline — Local engine ready</span>
+        </div>
+        <div class="status-pill syncing">
+          <div class="status-dot"></div>
+          <span>Learning — Storing new patterns</span>
+        </div>
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span>Cached — 0 bytes from network</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta">
+    <h2 class="cta-title">Ready to Meet <span class="gradient-text">Aiel</span>?</h2>
+    <p class="cta-sub">Join thousands who've already discovered the future of free AI. No sign-up, no credit card, no limits.</p>
+    <div class="hero-actions">
+      <button class="btn-primary cta-launch">🚀 Launch Aiel AI Now</button>
+      <button class="btn-secondary" id="install-btn" style="display:none">📱 Install App</button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>
+      🤖 <strong>Aiel AI</strong> — Free, open, always learning. &nbsp;|&nbsp;
+      Built with ❤️ using pure HTML, CSS &amp; JavaScript &nbsp;|&nbsp;
+      <a href="#hero">Back to top ↑</a>
+    </p>
+  </footer>
+
+</div><!-- /#landing-page -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     APP VIEW
+════════════════════════════════════════════════════════════════════════ -->
+<div id="app-view">
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="app-header-left">
+      <button class="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6"  x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <span class="app-logo">🤖 <span class="gradient-text">Aiel</span></span>
+    </div>
+
+    <div class="app-header-center">
+      <div class="mode-selector" role="tablist" aria-label="Chat modes">
+        <button class="mode-btn active" data-mode="chat" role="tab" aria-selected="true" title="Chat mode">
+          💬 <span>Chat</span>
+        </button>
+        <button class="mode-btn" data-mode="code" role="tab" aria-selected="false" title="Code mode">
+          💻 <span>Code</span>
+        </button>
+        <button class="mode-btn" data-mode="image" role="tab" aria-selected="false" title="Image mode">
+          🎨 <span>Image</span>
+        </button>
+        <button class="mode-btn" data-mode="video" role="tab" aria-selected="false" title="Video mode">
+          🎬 <span>Video</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="app-header-right">
+      <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle dark/light mode">🌙</button>
+      <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙️</button>
+      <button class="btn-secondary" style="padding:.35rem .85rem;font-size:.82rem;"
+              onclick="document.getElementById('app-view').classList.remove('active');document.getElementById('landing-page').style.display=''"
+              title="Return to landing page">
+        ← Home
+      </button>
+    </div>
+  </header>
+
+  <!-- AI Status Bar -->
+  <div class="ai-status-bar" role="status" aria-live="polite">
+    <div class="ai-status-dot" aria-hidden="true"></div>
+    <span class="ai-status-text">Initialising…</span>
+    <div class="learning-indicator" aria-live="polite" aria-label="Learning new pattern">
+      <span class="brain">🧠</span>
+      <span>Learning…</span>
+    </div>
+  </div>
+
+  <!-- App Body -->
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Conversation history">
+      <div class="sidebar-header">
+        <button class="new-chat-btn" aria-label="Start new conversation">
+          ✏️ New Chat
+        </button>
+        <div class="sidebar-search" role="search">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input type="search" placeholder="Search conversations…" aria-label="Search conversations" />
+        </div>
+      </div>
+
+      <div class="sidebar-section-label">Recent</div>
+      <div class="conversations-list" role="list" aria-label="Conversation list"></div>
+
+      <div class="sidebar-footer">
+        <span class="memory-badge" title="Learned patterns stored locally">🧠 0 patterns</span>
+        <span style="margin-left:auto">v1.0</span>
+      </div>
+    </aside>
+
+    <!-- Main Chat -->
+    <main class="chat-container">
+      <!-- Messages -->
+      <div class="messages-area" role="log" aria-label="Conversation" aria-live="polite">
+        <!-- Welcome screen / messages rendered here by JS -->
+      </div>
+
+      <!-- Media panel (hidden until image/video mode) -->
+      <div class="media-panel" style="display:none">
+        <div class="media-canvas-wrap">
+          <canvas id="gen-canvas" width="640" height="360" aria-label="Generated media canvas"></canvas>
+          <div style="position:absolute;color:var(--text-faint);font-size:.9rem;text-align:center;padding:1rem"
+               id="canvas-placeholder">
+            🎨 Your generated image will appear here
+          </div>
+        </div>
+        <div class="media-prompt-row">
+          <input id="media-prompt-input" class="media-prompt" type="text" placeholder="Describe what you want to generate…" aria-label="Media generation prompt" />
+          <button class="btn-primary" style="white-space:nowrap" onclick="generateMedia()">Generate</button>
+          <button class="btn-secondary" style="white-space:nowrap" onclick="downloadMedia()">⬇️ Save</button>
+        </div>
+      </div>
+
+      <!-- Upload preview -->
+      <div class="upload-preview" aria-label="Uploaded images preview"></div>
+
+      <!-- Input Area -->
+      <div class="input-area">
+        <div class="input-container">
+          <div class="input-row">
+            <textarea
+              id="chat-input"
+              class="chat-input"
+              placeholder="Ask me anything…"
+              rows="1"
+              aria-label="Chat input"
+              aria-multiline="true"
+              maxlength="4000"
+            ></textarea>
+
+            <div class="input-actions">
+              <button class="input-action-btn" id="upload-btn" title="Upload image" aria-label="Upload image">📷</button>
+              <button class="input-action-btn" id="voice-btn"  title="Voice input"  aria-label="Voice input">🎤</button>
+              <button class="send-btn" id="send-btn" title="Send message" aria-label="Send message">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="input-footer">
+            <span style="font-size:.72rem;color:var(--text-faint)">
+              Shift+Enter for new line · Aiel learns from every message 🧠
+            </span>
+            <span class="char-count">0/4000</span>
+          </div>
+        </div>
+
+        <!-- Hidden file input -->
+        <input type="file" id="upload-input" accept="image/*" multiple style="display:none" aria-hidden="true" />
+      </div>
+    </main>
+
+  </div><!-- /.app-body -->
+
+  <!-- Settings Panel -->
+  <aside class="settings-panel" aria-label="Settings" role="dialog" aria-modal="true">
+    <div class="settings-header">
+      <h3>⚙️ Settings</h3>
+      <button class="icon-btn" id="settings-close" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-body">
+
+      <div class="settings-section">
+        <h4>Appearance</h4>
+        <div class="settings-row">
+          <span class="settings-label">Dark Mode</span>
+          <button class="toggle on" id="theme-toggle-settings" aria-label="Toggle dark mode" role="switch" aria-checked="true"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>AI Engine</h4>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;font-size:.85rem">
+          <div style="margin-bottom:.4rem">
+            <strong>Active Backend:</strong> <span id="backend-display">Detecting…</span>
+          </div>
+          <div style="color:var(--text-muted);font-size:.8rem">
+            Aiel automatically selects the best available AI engine: Chrome AI → Transformers.js → Local Engine.
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>Memory</h4>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <button class="btn-secondary" style="width:100%;justify-content:center;padding:.6rem"
+                  onclick="updateStatsDisplay()">
+            📊 View Memory Stats
+          </button>
+          <div id="stats-display" style="display:none;background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:.85rem">
+            Loading…
+          </div>
+          <button class="btn-secondary" style="width:100%;justify-content:center;padding:.6rem;color:#ff4444;border-color:#ff4444"
+                  onclick="if(confirm('Clear all learned patterns? This cannot be undone.')) clearMemory()">
+            🗑️ Clear Learned Patterns
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>About Aiel</h4>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:.82rem;color:var(--text-muted);line-height:1.7">
+          <strong style="color:var(--text)">Aiel AI v1.0</strong><br/>
+          A fully free, autonomous AI assistant.<br/>
+          No API keys · No server · Works offline<br/>
+          Built with pure HTML, CSS &amp; JavaScript<br/><br/>
+          <strong style="color:var(--text)">AI Engines:</strong><br/>
+          1. Chrome Built-in AI (if available)<br/>
+          2. Transformers.js (HuggingFace)<br/>
+          3. Aiel Local Engine (always available)<br/><br/>
+          <strong style="color:var(--text)">Data Storage:</strong><br/>
+          All data is stored locally in IndexedDB.<br/>
+          Nothing is sent to any server.
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4>Keyboard Shortcuts</h4>
+        <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem">
+          <div style="display:flex;justify-content:space-between">
+            <span>Send message</span><kbd style="background:var(--surface3);padding:.1rem .4rem;border-radius:4px">Enter</kbd>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span>New line</span><kbd style="background:var(--surface3);padding:.1rem .4rem;border-radius:4px">Shift+Enter</kbd>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span>Toggle sidebar</span><kbd style="background:var(--surface3);padding:.1rem .4rem;border-radius:4px">Ctrl+B</kbd>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+</div><!-- /#app-view -->
+
+<!-- Toast notifications -->
+<div class="toast-container" aria-live="assertive" aria-relevant="additions"></div>
+
+<!-- Scripts -->
+<script src="learning.js"></script>
+<script src="ai-engine.js"></script>
+<script src="app.js"></script>
+
+<script>
+  /* Settings panel helpers */
+  async function updateStatsDisplay() {
+    const display = document.getElementById('stats-display');
+    const backend = document.getElementById('backend-display');
+    display.style.display = 'block';
+    display.textContent = 'Loading…';
+
+    if (window.AielLearning) {
+      const stats = await AielLearning.getStats();
+      display.innerHTML = `
+        <div>🧠 <strong>${stats.patterns}</strong> learned patterns</div>
+        <div>💬 <strong>${stats.conversations}</strong> saved conversations</div>
+        <div>💾 Storage: IndexedDB (local only)</div>
+      `;
+    }
+
+    if (window.AielEngine) {
+      backend.textContent = AielEngine.backend || 'local';
+    }
+  }
+
+  async function clearMemory() {
+    /* Re-open DB and clear patterns store */
+    const request = indexedDB.open('AielMemory', 1);
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      const tx = db.transaction('patterns', 'readwrite');
+      tx.objectStore('patterns').clear();
+      tx.oncomplete = () => {
+        document.querySelector('.memory-badge').textContent = '🧠 0 patterns';
+        const display = document.getElementById('stats-display');
+        if (display) display.textContent = '✅ Patterns cleared.';
+      };
+    };
+  }
+
+  /* Ctrl+B sidebar toggle */
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      document.querySelector('.sidebar-toggle')?.click();
+    }
+  });
+
+  /* Settings theme toggle sync */
+  document.getElementById('theme-toggle-settings')?.addEventListener('click', function() {
+    document.getElementById('theme-toggle')?.click();
+    this.classList.toggle('on');
+    this.setAttribute('aria-checked', this.classList.contains('on').toString());
+  });
+</script>
+
+</body>
+</html>

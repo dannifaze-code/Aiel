@@ -1,0 +1,26 @@
+{
+  "name": "Aiel AI - Your Free Intelligent Assistant",
+  "short_name": "Aiel AI",
+  "description": "A fully autonomous AI chatbot that learns, codes, and creates — no API key required.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#6c63ff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%236c63ff'/><text y='.9em' font-size='70' text-anchor='middle' x='50' fill='white'>🤖</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en",
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "url": "./index.html#chat",
+      "description": "Start a new conversation"
+    }
+  ]
+}
