@@ -18,6 +18,9 @@ const AielEngine = (() => {
   let isInitialising = false;
   let ready = false;
 
+  /* Pinned to a specific minor version for stability; the 2.x API is stable
+   * and this version is known to work well in ONNX-only browser mode without
+   * requiring a separate backend or build step. */
   const TRANSFORMERS_CDN =
     'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
 
@@ -857,7 +860,7 @@ WHERE to_tsvector('english', title || ' ' || COALESCE(content,''))
       while (peek() === '*' || peek() === '/') {
         const op = consume();
         const right = parsePower();
-        if (op === '/' && right === 0) throw new Error('Division by zero');
+        if (op === '/' && right === 0) throw new Error('Division by zero in expression (cannot divide by 0)');
         left = op === '*' ? left * right : left / right;
       }
       return left;

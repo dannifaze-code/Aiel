@@ -444,13 +444,13 @@
       thumbBtn.className = 'meta-action';
       thumbBtn.title = 'Thumbs up';
       thumbBtn.textContent = '👍';
-      thumbBtn.addEventListener('click', () => window.thumbsUp(thumbBtn));
+      thumbBtn.addEventListener('click', () => thumbsUp(thumbBtn));
 
       const regenBtn = document.createElement('button');
       regenBtn.className = 'meta-action';
       regenBtn.title = 'Regenerate';
       regenBtn.textContent = '🔄';
-      regenBtn.addEventListener('click', () => window.regenerate());
+      regenBtn.addEventListener('click', () => regenerateLast());
 
       meta.appendChild(copyBtn);
       meta.appendChild(thumbBtn);
@@ -1294,15 +1294,15 @@
     return hash;
   }
 
-  /* ── Global helpers ─────────────────────────────────────────────────────── */
+  /* ── Helper functions ───────────────────────────────────────────────────── */
 
-  window.thumbsUp = function(btn) {
+  function thumbsUp(btn) {
     btn.textContent = '👍';
     btn.style.color = 'var(--accent)';
     showToast('👍 Thanks for the feedback!', 'success');
-  };
+  }
 
-  window.regenerate = async function() {
+  async function regenerateLast() {
     if (isGenerating || messages.length < 2) return;
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
     if (!lastUserMsg) return;
@@ -1311,7 +1311,24 @@
     lastMsg?.remove();
     messages.pop();
     await generateResponse(lastUserMsg.content);
-  };
+  }
+
+  /* ── Media panel helpers ─────────────────────────────────────────────────── */
+
+  function generateMedia() {
+    const prompt = $('#media-prompt-input')?.value;
+    if (prompt) handleImageGeneration(prompt);
+  }
+
+  function downloadMedia() {
+    const canvas = $('#gen-canvas');
+    if (canvas) {
+      const link = document.createElement('a');
+      link.download = 'aiel-media.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  }
 
   /* ── Service worker ─────────────────────────────────────────────────────── */
 
@@ -1322,22 +1339,6 @@
       }).catch(() => {});
     }
   }
-
-  /* Media panel standalone generation */
-  window.generateMedia = function() {
-    const prompt = $('#media-prompt-input')?.value;
-    if (prompt) handleImageGeneration(prompt);
-  };
-
-  window.downloadMedia = function() {
-    const canvas = $('#gen-canvas');
-    if (canvas) {
-      const link = document.createElement('a');
-      link.download = 'aiel-media.png';
-      link.href = canvas.toDataURL();
-      link.click();
-    }
-  };
 
   /* ── Start ──────────────────────────────────────────────────────────────── */
 

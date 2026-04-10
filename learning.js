@@ -151,8 +151,10 @@ const AielLearning = (() => {
           patterns.forEach((pattern) => {
             const patternWords = pattern.input.split(/\s+/).filter(Boolean);
             const totalWords = inputWords.length + patternWords.length;
-            /* Skip patterns where both inputs are empty (avoid division by zero) */
-            if (totalWords === 0) return;
+          /* Skip patterns where both the user input and the stored pattern have no words
+           * — their combined total is 0 — which would cause division by zero in the
+           * Sørensen–Dice coefficient calculation below. */
+          if (totalWords === 0) return;
             const overlap = inputWords.filter((w) =>
               patternWords.some((pw) => pw.includes(w) || w.includes(pw))
             ).length;
