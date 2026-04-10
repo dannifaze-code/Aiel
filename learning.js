@@ -150,10 +150,13 @@ const AielLearning = (() => {
 
           patterns.forEach((pattern) => {
             const patternWords = pattern.input.split(/\s+/).filter(Boolean);
+            const totalWords = inputWords.length + patternWords.length;
+            /* Skip patterns where both inputs are empty (avoid division by zero) */
+            if (totalWords === 0) return;
             const overlap = inputWords.filter((w) =>
               patternWords.some((pw) => pw.includes(w) || w.includes(pw))
             ).length;
-            const similarity = (2 * overlap) / (inputWords.length + patternWords.length + 0.001);
+            const similarity = (2 * overlap) / totalWords;
             const finalScore = similarity * (pattern.score || 1);
 
             if (similarity > 0.55 && finalScore > bestScore) {

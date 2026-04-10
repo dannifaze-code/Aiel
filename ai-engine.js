@@ -822,6 +822,75 @@ WHERE to_tsvector('english', title || ' ' || COALESCE(content,''))
 
   /* ── Math solver ────────────────────────────────────────────────────────── */
 
+  /**
+   * Safe recursive-descent arithmetic parser.
+   * Evaluates expressions containing +, -, *, /, ** and parentheses
+   * without using eval() or new Function() to avoid code injection risks.
+   */
+  function safeMathEval(expr) {
+    const tokens = expr.replace(/\s+/g, '').match(/\d+\.?\d*|\*\*|[+\-*/()]/g);
+    if (!tokens) throw new Error('No valid tokens');
+    let pos = 0;
+
+    function peek() { return tokens[pos]; }
+    function consume() { return tokens[pos++]; }
+
+    /* Grammar (lowest to highest precedence):
+     *   expr   → term  (('+' | '-') term)*
+     *   term   → power (('*' | '/')  power)*
+     *   power  → unary ('**' unary)*
+     *   unary  → '-' primary | primary
+     *   primary → NUMBER | '(' expr ')'
+     */
+    function parseExpr() {
+      let left = parseTerm();
+      while (peek() === '+' || peek() === '-') {
+        const op = consume();
+        const right = parseTerm();
+        left = op === '+' ? left + right : left - right;
+      }
+      return left;
+    }
+
+    function parseTerm() {
+      let left = parsePower();
+      while (peek() === '*' || peek() === '/') {
+        const op = consume();
+        const right = parsePower();
+        if (op === '/' && right === 0) throw new Error('Division by zero');
+        left = op === '*' ? left * right : left / right;
+      }
+      return left;
+    }
+
+    function parsePower() {
+      let base = parseUnary();
+      if (peek() === '**') { consume(); base = Math.pow(base, parseUnary()); }
+      return base;
+    }
+
+    function parseUnary() {
+      if (peek() === '-') { consume(); return -parsePrimary(); }
+      return parsePrimary();
+    }
+
+    function parsePrimary() {
+      const tok = peek();
+      if (tok === '(') {
+        consume();
+        const val = parseExpr();
+        if (consume() !== ')') throw new Error('Missing closing parenthesis');
+        return val;
+      }
+      if (tok !== undefined && /^\d/.test(tok)) { consume(); return parseFloat(tok); }
+      throw new Error(`Unexpected token: ${tok}`);
+    }
+
+    const result = parseExpr();
+    if (pos < tokens.length) throw new Error('Unexpected tokens after expression');
+    return result;
+  }
+
   function solveMath(input) {
     try {
       /* Extract simple arithmetic expressions */
@@ -831,10 +900,9 @@ WHERE to_tsvector('english', title || ' ' || COALESCE(content,''))
       /* Replace ^ with ** for exponentiation */
       const safe = expr.replace(/\^/g, '**');
 
-      /* Use Function constructor to evaluate (limited to math operators) */
+      /* Evaluate using a safe, recursive descent parser instead of new Function() */
       if (/^[\d\s+\-*/().^**]+$/.test(safe)) {
-        // eslint-disable-next-line no-new-func
-        const result = new Function(`return ${safe}`)();
+        const result = safeMathEval(safe);
         return `🔢 **Result:** \`${expr} = ${result}\`\n\nI evaluated the expression step by step. Need more complex math or want to see the working?`;
       }
       throw new Error('Complex expression');

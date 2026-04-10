@@ -234,7 +234,8 @@
         </div>
         <div class="status-pill">
           <div class="status-dot"></div>
-          <span>Cached — 0 bytes from network</span>
+        <!-- Static illustration — actual caching is managed by the service worker -->
+          <span>Assets cached — runs without internet</span>
         </div>
       </div>
     </div>
@@ -300,9 +301,7 @@
     <div class="app-header-right">
       <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle dark/light mode">🌙</button>
       <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Open settings">⚙️</button>
-      <button class="btn-secondary" style="padding:.35rem .85rem;font-size:.82rem;"
-              onclick="document.getElementById('app-view').classList.remove('active');document.getElementById('landing-page').style.display=''"
-              title="Return to landing page">
+      <button class="btn-secondary" id="back-to-home-btn" style="padding:.35rem .85rem;font-size:.82rem;" title="Return to landing page">
         ← Home
       </button>
     </div>
@@ -360,8 +359,8 @@
         </div>
         <div class="media-prompt-row">
           <input id="media-prompt-input" class="media-prompt" type="text" placeholder="Describe what you want to generate…" aria-label="Media generation prompt" />
-          <button class="btn-primary" style="white-space:nowrap" onclick="generateMedia()">Generate</button>
-          <button class="btn-secondary" style="white-space:nowrap" onclick="downloadMedia()">⬇️ Save</button>
+          <button class="btn-primary" id="generate-media-panel-btn" style="white-space:nowrap">Generate</button>
+          <button class="btn-secondary" id="download-media-panel-btn" style="white-space:nowrap">⬇️ Save</button>
         </div>
       </div>
 
@@ -438,15 +437,13 @@
       <div class="settings-section">
         <h4>Memory</h4>
         <div style="display:flex;flex-direction:column;gap:.5rem">
-          <button class="btn-secondary" style="width:100%;justify-content:center;padding:.6rem"
-                  onclick="updateStatsDisplay()">
+          <button class="btn-secondary" id="view-stats-btn" style="width:100%;justify-content:center;padding:.6rem">
             📊 View Memory Stats
           </button>
           <div id="stats-display" style="display:none;background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:.85rem">
             Loading…
           </div>
-          <button class="btn-secondary" style="width:100%;justify-content:center;padding:.6rem;color:#ff4444;border-color:#ff4444"
-                  onclick="if(confirm('Clear all learned patterns? This cannot be undone.')) clearMemory()">
+          <button class="btn-secondary" id="clear-memory-btn" style="width:100%;justify-content:center;padding:.6rem;color:#ff4444;border-color:#ff4444">
             🗑️ Clear Learned Patterns
           </button>
         </div>
@@ -533,6 +530,13 @@
       };
     };
   }
+
+  /* Bind settings memory buttons */
+  document.getElementById('view-stats-btn')?.addEventListener('click', updateStatsDisplay);
+
+  document.getElementById('clear-memory-btn')?.addEventListener('click', () => {
+    if (confirm('Clear all learned patterns? This cannot be undone.')) clearMemory();
+  });
 
   /* Ctrl+B sidebar toggle */
   document.addEventListener('keydown', (e) => {

@@ -756,7 +756,6 @@ footer a { color: var(--text-muted); }
   cursor: pointer;
   transition: background var(--t-fast);
   position: relative;
-  group: true;
 }
 .conv-item:hover { background: var(--surface2); }
 .conv-item.active { background: rgba(108,99,255,.15); }

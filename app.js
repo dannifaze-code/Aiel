@@ -205,9 +205,17 @@
     /* Voice input */
     $('#voice-btn')?.addEventListener('click', handleVoiceInput);
 
-    /* Media generation */
+    /* Media panel buttons */
     $('#generate-media-btn')?.addEventListener('click', generateMedia);
     $('#download-media-btn')?.addEventListener('click', downloadMedia);
+    $('#generate-media-panel-btn')?.addEventListener('click', generateMedia);
+    $('#download-media-panel-btn')?.addEventListener('click', downloadMedia);
+
+    /* Back to landing page */
+    $('#back-to-home-btn')?.addEventListener('click', () => {
+      appView.classList.remove('active');
+      landingPage.style.display = '';
+    });
 
     /* Suggestion cards */
     $$('.suggestion-card').forEach((card) => {
@@ -333,7 +341,6 @@
     const typingEl = addTypingIndicator();
 
     try {
-      const msgEl = null;
       let fullResponse = '';
 
       /* Stream response */
@@ -419,14 +426,36 @@
 
     const meta = document.createElement('div');
     meta.className = 'message-meta';
-    meta.innerHTML = `
-      <span>${formatTime(Date.now())}</span>
-      ${role === 'assistant' ? `
-        <button class="meta-action" title="Copy" onclick="copyToClipboard(this, '${escapeAttr(content)}')">📋</button>
-        <button class="meta-action" title="Thumbs up" onclick="thumbsUp(this)">👍</button>
-        <button class="meta-action" title="Regenerate" onclick="regenerate()">🔄</button>
-      ` : ''}
-    `;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.textContent = formatTime(Date.now());
+    meta.appendChild(timeSpan);
+
+    if (role === 'assistant') {
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'meta-action';
+      copyBtn.title = 'Copy';
+      copyBtn.textContent = '📋';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(content).then(() => showToast('📋 Copied to clipboard!', 'success'));
+      });
+
+      const thumbBtn = document.createElement('button');
+      thumbBtn.className = 'meta-action';
+      thumbBtn.title = 'Thumbs up';
+      thumbBtn.textContent = '👍';
+      thumbBtn.addEventListener('click', () => window.thumbsUp(thumbBtn));
+
+      const regenBtn = document.createElement('button');
+      regenBtn.className = 'meta-action';
+      regenBtn.title = 'Regenerate';
+      regenBtn.textContent = '🔄';
+      regenBtn.addEventListener('click', () => window.regenerate());
+
+      meta.appendChild(copyBtn);
+      meta.appendChild(thumbBtn);
+      meta.appendChild(regenBtn);
+    }
 
     contentDiv.appendChild(bubble);
     contentDiv.appendChild(meta);
@@ -489,7 +518,7 @@
       return `<div class="code-block">
         <div class="code-block-header">
           <span class="code-lang">${language}</span>
-          <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+          <button class="copy-btn" data-action="copy-code">📋 Copy</button>
         </div>
         <pre><code class="language-${language}">${highlighted}</code></pre>
       </div>`;
@@ -604,7 +633,7 @@
     sendBtn.disabled = true;
     setAIStatus('busy', 'Creating image…');
 
-    const msgEl = addTypingIndicator();
+    const typingIndicator = addTypingIndicator();
 
     try {
       await sleep(500);
@@ -616,7 +645,7 @@
       generateCanvasArt(ctx, canvas.width, canvas.height, prompt);
 
       const dataUrl = canvas.toDataURL('image/png');
-      msgEl.remove();
+      typingIndicator.remove();
 
       const wrapper = document.createElement('div');
       wrapper.className = 'message assistant';
@@ -640,7 +669,7 @@
       messages.push({ role: 'assistant', content: `[Image generated: ${prompt}]`, timestamp: Date.now() });
 
     } catch (e) {
-      msgEl.remove();
+      typingIndicator.remove();
       addMessage('assistant', `⚠️ Image generation error: ${e.message}`);
     } finally {
       isGenerating = false;
@@ -763,7 +792,7 @@
     sendBtn.disabled = true;
     setAIStatus('busy', 'Creating video…');
 
-    const msgEl = addTypingIndicator();
+    const typingIndicator = addTypingIndicator();
 
     try {
       /* If there are uploaded images, animate them */
@@ -772,9 +801,9 @@
       } else {
         await generateAnimatedVideo(prompt);
       }
-      msgEl.remove();
+      typingIndicator.remove();
     } catch (e) {
-      msgEl.remove();
+      typingIndicator.remove();
       addMessage('assistant', `⚠️ Video generation error: ${e.message}`);
     } finally {
       isGenerating = false;
@@ -841,7 +870,7 @@
     stopBtn.className = 'btn-secondary';
     stopBtn.style.cssText = 'display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 1rem;font-size:.85rem;margin-top:.5rem;';
     stopBtn.textContent = '⏹️ Stop Animation';
-    stopBtn.onclick = () => { clearInterval(intervalId); stopBtn.textContent = '✅ Saved'; };
+    stopBtn.addEventListener('click', () => { clearInterval(intervalId); stopBtn.textContent = '✅ Saved'; });
     wrapper.querySelector('.message-bubble').appendChild(stopBtn);
   }
 
@@ -913,7 +942,7 @@
     stopBtn.className = 'btn-secondary';
     stopBtn.style.cssText = 'display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 1rem;font-size:.85rem;margin-top:.5rem;';
     stopBtn.textContent = '⏹️ Stop Slideshow';
-    stopBtn.onclick = () => { clearInterval(intervalId); stopBtn.textContent = '✅ Done'; };
+    stopBtn.addEventListener('click', () => { clearInterval(intervalId); stopBtn.textContent = '✅ Done'; });
     wrapper.querySelector('.message-bubble').appendChild(stopBtn);
   }
 
@@ -942,17 +971,23 @@
     const thumb = document.createElement('div');
     thumb.className = 'upload-thumb';
     const idx = uploadedImages.length - 1;
-    thumb.innerHTML = `
-      <img src="${dataUrl}" alt="Upload" />
-      <button class="upload-thumb-remove" onclick="removeUpload(${idx})">✕</button>
-    `;
+
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = 'Upload';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'upload-thumb-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => {
+      uploadedImages.splice(idx, 1);
+      renderUploadPreviews();
+    });
+
+    thumb.appendChild(img);
+    thumb.appendChild(removeBtn);
     uploadPreview.appendChild(thumb);
   }
-
-  window.removeUpload = function(idx) {
-    uploadedImages.splice(idx, 1);
-    renderUploadPreviews();
-  };
 
   function renderUploadPreviews() {
     if (!uploadPreview) return;
@@ -960,10 +995,21 @@
     uploadedImages.forEach((dataUrl, i) => {
       const thumb = document.createElement('div');
       thumb.className = 'upload-thumb';
-      thumb.innerHTML = `
-        <img src="${dataUrl}" alt="Upload ${i}" />
-        <button class="upload-thumb-remove" onclick="removeUpload(${i})">✕</button>
-      `;
+
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = `Upload ${i}`;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'upload-thumb-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.addEventListener('click', () => {
+        uploadedImages.splice(i, 1);
+        renderUploadPreviews();
+      });
+
+      thumb.appendChild(img);
+      thumb.appendChild(removeBtn);
       uploadPreview.appendChild(thumb);
     });
   }
@@ -1048,11 +1094,30 @@
       const item = document.createElement('div');
       item.className = `conv-item${conv.id === currentConvId ? ' active' : ''}`;
       item.dataset.id = conv.id;
-      item.innerHTML = `
-        <span class="conv-icon">💬</span>
-        <span class="conv-title">${escapeHtml(conv.title)}</span>
-        <button class="conv-delete" title="Delete" onclick="deleteConv(${conv.id}, event)">🗑️</button>
-      `;
+
+      const icon = document.createElement('span');
+      icon.className = 'conv-icon';
+      icon.textContent = '💬';
+
+      const title = document.createElement('span');
+      title.className = 'conv-title';
+      title.textContent = conv.title;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'conv-delete';
+      deleteBtn.title = 'Delete';
+      deleteBtn.textContent = '🗑️';
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await AielLearning.deleteConversation(conv.id);
+        if (currentConvId === conv.id) startNewChat();
+        await refreshConversations();
+        showToast('🗑️ Conversation deleted', 'info');
+      });
+
+      item.appendChild(icon);
+      item.appendChild(title);
+      item.appendChild(deleteBtn);
       item.addEventListener('click', () => loadConversation(conv));
       conversationsList.appendChild(item);
     });
@@ -1085,14 +1150,6 @@
     refreshConversations();
     if (window.innerWidth < 768) sidebar.classList.remove('mobile-open');
   }
-
-  window.deleteConv = async function(id, e) {
-    e.stopPropagation();
-    await AielLearning.deleteConversation(id);
-    if (currentConvId === id) startNewChat();
-    await refreshConversations();
-    showToast('🗑️ Conversation deleted', 'info');
-  };
 
   function startNewChat() {
     /* Save current conversation */
@@ -1203,10 +1260,6 @@
       .replace(/'/g, '&#039;');
   }
 
-  function escapeAttr(str) {
-    return escapeHtml(str).replace(/\n/g, '&#10;');
-  }
-
   function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -1218,15 +1271,18 @@
 
   function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-  /* Seeded random number generator (mulberry32) */
+  /* Seeded random number generator — mulberry32 algorithm.
+   * Each call advances the 32-bit state (s) using a linear congruential step,
+   * then applies a series of xor-shift and multiply operations to mix the bits
+   * (avalanche effect), producing a uniformly distributed float in [0, 1). */
   function seededRandom(seed) {
-    let s = seed >>> 0;
+    let s = seed >>> 0;   /* Ensure unsigned 32-bit integer */
     return function() {
-      s += 0x6D2B79F5;
+      s += 0x6D2B79F5;                              /* Linear congruential step */
       let t = s;
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      t = Math.imul(t ^ (t >>> 15), t | 1);         /* Xor-shift + multiply mix #1 */
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);    /* Xor-shift + multiply mix #2 */
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296; /* Final mix + normalise to [0,1) */
     };
   }
 
@@ -1238,13 +1294,7 @@
     return hash;
   }
 
-  /* ── Global helpers (called from HTML onclick) ──────────────────────────── */
-
-  window.copyToClipboard = function(btn, text) {
-    navigator.clipboard.writeText(text.replace(/&#10;/g, '\n')).then(() => {
-      showToast('📋 Copied to clipboard!', 'success');
-    });
-  };
+  /* ── Global helpers ─────────────────────────────────────────────────────── */
 
   window.thumbsUp = function(btn) {
     btn.textContent = '👍';
