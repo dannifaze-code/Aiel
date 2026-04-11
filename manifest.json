@@ -1,7 +1,7 @@
 {
   "name": "Aiel AI - Your Free Intelligent Assistant",
   "short_name": "Aiel AI",
-  "description": "A fully autonomous AI chatbot that learns, codes, and creates — no API key required.",
+  "description": "A fully autonomous AI chatbot with smart provider routing — no API key required.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0a1a",
