@@ -1,5 +1,5 @@
 /* Aiel AI - Service Worker for offline support */
-const CACHE_NAME = 'aiel-ai-v2';
+const CACHE_NAME = 'aiel-ai-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,9 @@ const STATIC_ASSETS = [
   './knowledge-ingestor.js',
   './ai-learning-bridge.js',
   './self-training.js',
+  './ai-mood.js',
+  './auto-learner.js',
+  './ai-graph.js',
   './manifest.json'
 ];
 
@@ -21,7 +24,11 @@ const TRAINING_DOMAINS = [
   'opentdb.com',
   'numbersapi.com',
   'openlibrary.org',
-  'picsum.photos'
+  'picsum.photos',
+  'hacker-news.firebaseio.com',
+  'dev.to',
+  'api.stackexchange.com',
+  'api.allorigins.win'
 ];
 
 /* Install: cache all static assets */

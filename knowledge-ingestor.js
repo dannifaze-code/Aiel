@@ -102,6 +102,7 @@ const AielKnowledgeIngestor = (() => {
       await AielLearning.learnPattern(input, response, keywords);
       await markIngested(item.hash);
       await incrementStat('text');
+      emitIngestionEvent('text', item);
       return true;
     } catch (_) {
       return false;
@@ -129,6 +130,7 @@ const AielKnowledgeIngestor = (() => {
       await AielLearning.learnPattern(input, response, keywords);
       await markIngested(item.hash);
       await incrementStat('qa');
+      emitIngestionEvent('qa', item);
       return true;
     } catch (_) {
       return false;
@@ -159,6 +161,7 @@ const AielKnowledgeIngestor = (() => {
 
       await markIngested(item.hash);
       await incrementStat('code');
+      emitIngestionEvent('code', item);
       return true;
     } catch (_) {
       return false;
@@ -182,6 +185,7 @@ const AielKnowledgeIngestor = (() => {
       await AielLearning.learnPattern(input, response, keywords);
       await markIngested(item.hash);
       await incrementStat('image');
+      emitIngestionEvent('image', item);
       return true;
     } catch (_) {
       return false;
@@ -226,6 +230,21 @@ const AielKnowledgeIngestor = (() => {
       if (success) count++;
     }
     return count;
+  }
+
+  /* ── Event emitter ────────────────────────────────────────────────────── */
+
+  function emitIngestionEvent(category, item) {
+    if (typeof window !== 'undefined') {
+      const preview = item?.content?.title || item?.content?.word || item?.content?.question || '';
+      window.dispatchEvent(new CustomEvent('aiel-ingestion', {
+        detail: { category, preview, source: item?.source || '' }
+      }));
+    }
+    /* Notify mood system */
+    if (typeof AielMood !== 'undefined') {
+      AielMood.onItemLearned(item);
+    }
   }
 
   /* ── Stats helpers ─────────────────────────────────────────────────────── */
