@@ -95,8 +95,9 @@ const AielLearning = (() => {
    * @param {string} input - User input
    * @param {string} response - AI response that was positively received
    * @param {string[]} keywords - Key terms extracted from input
+   * @param {object} [meta] - Optional metadata {source, confidence, topic}
    */
-  function learnPattern(input, response, keywords = []) {
+  function learnPattern(input, response, keywords = [], meta = {}) {
     return openDB().then((database) => {
       return new Promise((resolve, reject) => {
         const tx = database.transaction(STORES.PATTERNS, 'readwrite');
@@ -115,6 +116,15 @@ const AielLearning = (() => {
               if (normalise(pattern.input) === normInput) {
                 pattern.score = (pattern.score || 1) + 1;
                 pattern.lastUsed = Date.now();
+                /* Track multiple sources for cross-validation */
+                if (meta.source && pattern.sources) {
+                  if (!pattern.sources.includes(meta.source)) {
+                    pattern.sources.push(meta.source);
+                  }
+                }
+                if (meta.confidence != null) {
+                  pattern.confidence = Math.max(pattern.confidence || 0, meta.confidence);
+                }
                 store.put(pattern);
               }
             });
@@ -129,7 +139,11 @@ const AielLearning = (() => {
           keyword: keywords[0] ? keywords[0].toLowerCase() : 'general',
           score: 1,
           timestamp: Date.now(),
-          lastUsed: Date.now()
+          lastUsed: Date.now(),
+          source: meta.source || 'user',
+          sources: meta.source ? [meta.source] : ['user'],
+          confidence: meta.confidence ?? 0.3,
+          topic: meta.topic || null
         };
 
         const addReq = store.add(record);
@@ -183,7 +197,7 @@ const AielLearning = (() => {
             }
           });
 
-          resolve(best ? { response: best.response, score: bestScore } : null);
+          resolve(best ? { response: best.response, score: bestScore, confidence: best.confidence || 0, sources: best.sources || [], topic: best.topic || null, id: best.id } : null);
         };
 
         req.onerror = () => resolve(null);
@@ -428,6 +442,102 @@ const AielLearning = (() => {
     return withStore(STORES.PATTERNS, 'readwrite', (store) => store.clear());
   }
 
+  /* ── Pattern queries for confidence engine ─────────────────────────────── */
+
+  /**
+   * Get all patterns (for confidence engine analysis).
+   * @param {number} [limit=500]
+   * @returns {Promise<object[]>}
+   */
+  function getAllPatterns(limit = 500) {
+    return openDB().then((database) => {
+      return new Promise((resolve) => {
+        const tx = database.transaction(STORES.PATTERNS, 'readonly');
+        const store = tx.objectStore(STORES.PATTERNS);
+        const req = store.getAll();
+        req.onsuccess = (e) => resolve(e.target.result.slice(-limit));
+        req.onerror = () => resolve([]);
+      });
+    });
+  }
+
+  /**
+   * Get patterns that match a topic string.
+   * @param {string} topic
+   * @param {number} [limit=50]
+   * @returns {Promise<object[]>}
+   */
+  function getPatternsByTopic(topic, limit = 50) {
+    return openDB().then((database) => {
+      return new Promise((resolve) => {
+        const tx = database.transaction(STORES.PATTERNS, 'readonly');
+        const store = tx.objectStore(STORES.PATTERNS);
+        const req = store.getAll();
+        req.onsuccess = (e) => {
+          const all = e.target.result;
+          const topicLower = topic.toLowerCase();
+          const topicWords = topicLower.split(/\s+/).filter(Boolean);
+          const filtered = all.filter((p) => {
+            if (p.topic && p.topic.toLowerCase() === topicLower) return true;
+            return topicWords.some((tw) =>
+              (p.keywords || []).some((kw) => kw.includes(tw) || tw.includes(kw))
+            );
+          }).slice(0, limit);
+          resolve(filtered);
+        };
+        req.onerror = () => resolve([]);
+      });
+    });
+  }
+
+  /**
+   * Update a pattern's confidence score and metadata.
+   * @param {number} id — Pattern ID
+   * @param {object} updates — {confidence, sources, lastUsed, userAccepted}
+   * @returns {Promise<boolean>}
+   */
+  function updatePattern(id, updates) {
+    return openDB().then((database) => {
+      return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.PATTERNS, 'readwrite');
+        const store = tx.objectStore(STORES.PATTERNS);
+        const req = store.get(id);
+        req.onsuccess = (e) => {
+          const pattern = e.target.result;
+          if (!pattern) { resolve(false); return; }
+          Object.assign(pattern, updates);
+          const putReq = store.put(pattern);
+          putReq.onsuccess = () => resolve(true);
+          putReq.onerror = (ev) => reject(ev.target.error);
+        };
+        req.onerror = (e) => reject(e.target.error);
+      });
+    });
+  }
+
+  /**
+   * Get a breakdown of knowledge sources across all patterns.
+   * @returns {Promise<object>} — { sourceName: count }
+   */
+  function getPatternSourceStats() {
+    return openDB().then((database) => {
+      return new Promise((resolve) => {
+        const tx = database.transaction(STORES.PATTERNS, 'readonly');
+        const store = tx.objectStore(STORES.PATTERNS);
+        const req = store.getAll();
+        req.onsuccess = (e) => {
+          const stats = {};
+          e.target.result.forEach((p) => {
+            const src = p.source || 'user';
+            stats[src] = (stats[src] || 0) + 1;
+          });
+          resolve(stats);
+        };
+        req.onerror = () => resolve({});
+      });
+    });
+  }
+
   /* ── Helpers ───────────────────────────────────────────────────────────── */
 
   function normalise(text) {
@@ -476,6 +586,10 @@ const AielLearning = (() => {
     deleteKnowledge,
     clearKnowledge,
     clearPatterns,
+    getAllPatterns,
+    getPatternsByTopic,
+    updatePattern,
+    getPatternSourceStats,
     getStats,
     extractKeywords,
     isValidResponse

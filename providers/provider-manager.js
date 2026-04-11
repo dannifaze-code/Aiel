@@ -15,6 +15,7 @@ const AielProviderManager = (() => {
   let ready = false;
   let initialising = false;
   let strategy = 'balanced'; /* 'latency' | 'balanced' | 'availability' */
+  let autoProbeTimer = null;
 
   /* Default provider configurations (stored/loaded from preferences) */
   const DEFAULT_CONFIG = {
@@ -127,6 +128,10 @@ const AielProviderManager = (() => {
 
     const name = activeProvider?.displayName || 'Local Engine';
     onProgress?.(`Ready — using ${name}`);
+
+    /* Start periodic health-check loop */
+    startAutoProbe();
+
     return activeProvider?.name || 'local';
   }
 
@@ -162,6 +167,50 @@ const AielProviderManager = (() => {
     /* Sort by score (lower = better) */
     available.sort((a, b) => a.score(strategy) - b.score(strategy));
     return available[0];
+  }
+
+  /* ── Periodic Auto-Probe ──────────────────────────────────────────────── */
+
+  /**
+   * Start a periodic health-check loop.
+   * Re-probes all providers and switches if a better one becomes available.
+   * @param {number} [intervalMs=30000] — Probe interval in milliseconds
+   */
+  function startAutoProbe(intervalMs = 30000) {
+    stopAutoProbe();
+    autoProbeTimer = setInterval(async () => {
+      try {
+        await probeAll();
+        const previous = activeProvider?.name;
+        const best = selectBest();
+        if (best && best.name !== previous) {
+          activeProvider = best;
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('aiel-provider-switch', {
+              detail: { provider: best.name, displayName: best.displayName }
+            }));
+          }
+        }
+      } catch (_) { /* non-critical */ }
+    }, intervalMs);
+  }
+
+  /**
+   * Stop the periodic health-check loop.
+   */
+  function stopAutoProbe() {
+    if (autoProbeTimer) {
+      clearInterval(autoProbeTimer);
+      autoProbeTimer = null;
+    }
+  }
+
+  /**
+   * Get all currently healthy providers (for tandem learning).
+   * @returns {Provider[]}
+   */
+  function getHealthyProviders() {
+    return providers.filter(p => p._available && p._healthy);
   }
 
   /* ── Chat Interface ────────────────────────────────────────────────────── */
@@ -329,6 +378,9 @@ const AielProviderManager = (() => {
     listAllModels,
     refresh,
     probeAll,
+    startAutoProbe,
+    stopAutoProbe,
+    getHealthyProviders,
     get backend() { return activeProvider?.name || 'local'; },
     get isReady() { return ready; },
     get providers() { return [...providers]; }
