@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endless - Horror Survival Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen">
+        <div class="menu-content">
+            <h1 class="game-title">ENDLESS</h1>
+            <p class="subtitle">BOARLAW PRISON FACILITY - CORRECTIONS OFFICER SIMULATOR</p>
+            <p class="warning-text">INMATES MAY ESCAPE... INTO THE ENDLESS FOREST</p>
+            <button id="btn-new-game" class="menu-btn">NEW GAME</button>
+            <button id="btn-load" class="menu-btn">LOAD GAME</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen" style="display: none;">
+        <div class="loading-content">
+            <p>LOADING ASSETS...</p>
+            <div class="loading-bar">
+                <div id="loading-progress"></div>
+            </div>
+            <p id="loading-text"></p>
+        </div>
+    </div>
+
+    <!-- Game UI -->
+    <div id="game-ui" class="screen" style="display: none;">
+        <!-- Top UI -->
+        <div id="top-ui">
+            <div id="money-display" class="ui-money">$150</div>
+            <div id="moral-display" class="ui-moral">MORAL: NORMAL</div>
+        </div>
+
+        <!-- Bottom UI -->
+        <div id="bottom-ui">
+            <div id="health-container" class="health-container">
+                <div class="health-label">HEALTH</div>
+                <div id="armor-bar" class="armor-bar">
+                    <div id="armor-segment-1" class="armor-segment"></div>
+                    <div id="armor-segment-2" class="armor-segment"></div>
+                    <div id="armor-segment-3" class="armor-segment"></div>
+                </div>
+                <div id="health-bar" class="health-bar">
+                    <div id="health-fill" class="health-fill"></div>
+                </div>
+            </div>
+            <div id="weapon-display" class="weapon-display">
+                <div id="weapon-name">FLASHLIGHT</div>
+                <div id="ammo-count">∞</div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="death-reason">YOU DIED</h2>
+                <p id="death-stats"></p>
+                <button id="btn-restart" class="menu-btn">TRY AGAIN</button>
+                <button id="btn-menu" class="menu-btn">MAIN MENU</button>
+            </div>
+        </div>
+
+        <!-- Win/Return Screen -->
+        <div id="return-screen" class="modal" style="display: none;">
+            <div class="modal-content return-content">
+                <h2>PRISONER RETURNED</h2>
+                <p id="return-earnings">EARNED: $50</p>
+                <p id="timer-info"></p>
+                <button id="btn-back-to-prison" class="menu-btn">BACK TO PRISON</button>
+            </div>
+        </div>
+
+        <!-- Warning Display -->
+        <div id="warning-overlay" class="warning-overlay" style="display: none;">
+            <div class="warning-content">
+                <h2 id="warning-title">WARNING!</h2>
+                <p id="warning-text">Inmate #{escapee} has escaped into the forest!</p>
+                <button id="btn-enter-forest" class="menu-btn">CHASE INTO FOREST</button>
+                <button id="btn-no-chase" class="menu-btn">IGNORE ESCAPE</button>
+            </div>
+        </div>
+
+        <!-- Prison Interface - Inmate Monitor -->
+        <div id="prison-panel" class="panel" style="display: none;">
+            <div class="panel-header">
+                <h3>INMATE MONITOR</h3>
+                <button id="btn-close-panel" class="close-btn">&times;</button>
+            </div>
+            <div class="prisoner-list">
+                <div id="prisoner-headers"></div>
+                <div id="prisoner-list-content"></div>
+            </div>
+            <div id="prison-warning" class="prison-warning" style="display: none;">
+                <h4>⚠ PRISON ALERT ⚠</h4>
+                <p id="prison-warning-text"></p>
+            </div>
+        </div>
+
+        <!-- Camera Feed Interface -->
+        <div id="camera-panel" class="panel" style="display: none;">
+            <div class="panel-header">
+                <h3>SECURITY CAMERAS</h3>
+                <button id="btn-close-cameras" class="close-btn">&times;</button>
+            </div>
+            <div class="camera-grid" id="camera-grid"></div>
+        </div>
+
+        <!-- Forest Warning -->
+        <div id="forest-warning" class="forest-warning" style="display: none;">
+            <div class="warning-box">
+                <h3>The Endless Forest</h3>
+                <p>The criminal is hiding somewhere in the dark forest.</p>
+                <p>Your flashlight is your only weapon right now...</p>
+                <p>Criminals may have: <span id="enemy-weapon-info"></span></p>
+                <button id="btn-enter-dark" class="menu-btn large">ENTER FOREST</button>
+            </div>
+        </div>
+
+        <!-- Shop Interface -->
+        <div id="shop-panel" class="panel" style="display: none;">
+            <div class="panel-header">
+                <h3>WEAPON SHOP</h3>
+                <button id="btn-close-shop" class="close-btn">&times;</button>
+            </div>
+            <div class="shop-items">
+                <div class="shop-item" data-item="pistol">
+                    <div class="item-icon weapon-icon-pistol"></div>
+                    <div class="item-info">
+                        <h4>PISTOL</h4>
+                        <p>10 bullets, .38 caliber</p>
+                        <span class="item-price">$50</span>
+                    </div>
+                </div>
+                <div class="shop-item" data-item="bat">
+                    <div class="item-icon weapon-icon-bat"></div>
+                    <div class="item-info">
+                        <h4>BASEBALL BAT</h4>
+                        <p>Unlimited swings, heavy damage</p>
+                        <span class="item-price">$20</span>
+                    </div>
+                </div>
+                <div class="shop-item" data-item="armor">
+                    <div class="item-icon weapon-icon-armor"></div>
+                    <div class="item-info">
+                        <h4>ARMOR PLATE</h4>
+                        <p>Extra health bar segments</p>
+                        <span class="item-price">$100</span>
+                    </div>
+                </div>
+                <div class="shop-item" data-item="flashlight">
+                    <div class="item-icon weapon-icon-flashlight"></div>
+                    <div class="item-info">
+                        <h4>UPGRADE FLASHLIGHT</h4>
+                        <p>Better visibility in dark</p>
+                        <span class="item-price">$15</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Escapee Selection -->
+        <div id="escapee-preview" class="modal" style="display: none;">
+            <div class="modal-content escapee-preview-content">
+                <h2>ESCAPEE INFORMATION</h2>
+                <div id="escapee-details" class="escapee-details"></div>
+            </div>
+        </div>
+
+        <!-- About Dialog -->
+        <div id="about-dialog" class="modal" style="display: none;">
+            <div class="modal-content about-content">
+                <h2>ENDLESS</h2>
+                <p>You are a corrections officer at the Boarlak Prison Facility.</p>
+                <p>Your job is to watch over inmates, manage escaped prisoners, and keep the facility running.</p>
+                <h3>GAMEPLAY OBJECTIVES:</h3>
+                <ul>
+                    <li>Monitor inmates for self-harm</li>
+                    <li>Respond to camera alerts</li>
+                    <li>Capture escapees before chaos spreads</li>
+                    <li>Survive the endless forest when escape happens</li>
+                </ul>
+                <h3>CRIMINAL TYPES:</h3>
+                <ul>
+                    <li><strong>Serial Killer</strong> - Knife fighter, stealthy, cunning</li>
+                    <li><strong>Rapist</strong> - Bat user, aggressive, territorial</li>
+                    <li><strong>Mass Murderer</strong> - Gun expert, fearsome, deadly</li>
+                </ul>
+                <h3>CONTROLS:</h3>
+                <ul>
+                    <li><strong>WASD</strong> - Move</li>
+                    <li><strong>Mouse</strong> - Look around</li>
+                    <li><strong>Click</strong> - Interact / Shoot</li>
+                    <li><strong>E</strong> - Open Prison Panes / Interact</li>
+                    <li><strong>T</strong> - Open Camera Panels</li>
+                    <li><strong>Q</strong> - Open Weapon Shop</li>
+                </ul>
+                <p style="color: #666; margin-top: 20px;">Press <strong>P</strong> to bring up menus</p>
+                <button id="btn-close-about" class="menu-btn">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- Level Complete Screen -->
+        <div id="level-complete" class="modal" style="display: none;">
+            <div class="modal-content level-complete-content">
+                <h2>SHIFT COMPLETE</h2>
+                <p id="level-stats"></p>
+                <p>Total Earnings: <span id="level-earnings" style="color: #0f0;"></span></p>
+                <button id="btn-next-shift" class="menu-btn">NEXT SHIFT</button>
+            </div>
+        </div>
+
+        <!-- Cell Interaction Tooltip -->
+        <div id="cell-tooltip">
+            <span class="cell-id"></span>
+            <span class="inmate-name"></span>
+            <span class="interact-prompt">[Press E to Inspect]</span>
+        </div>
+
+        <!-- Cell Inspection Dialog -->
+        <div id="cell-inspect-modal">
+            <div class="inspect-card">
+                <div class="inspect-header">
+                    <h2 id="inspect-title">INSPECTION</h2>
+                    <button id="btn-close-inspect" class="close-btn">&times;</button>
+                </div>
+                <div class="inspect-body" id="inspect-body"></div>
+                <div class="inspect-actions" id="inspect-actions">
+                    <button class="menu-btn inspect-action-btn" data-action="report">REPORT</button>
+                    <button class="menu-btn inspect-action-btn" data-action="leave">LEAVE IT</button>
+                    <button class="menu-btn inspect-action-btn" data-action="investigate">INVESTIGATE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prison Escape Warning (full screen) -->
+        <div id="prison-escape-warning" class="prison-escape-warning" style="display: none;">
+            <div class="warning-content">
+                <h2 id="pew-title">PRISON BREACH!</h2>
+                <p id="pew-text">An inmate has escaped into the forest!</p>
+                <button id="btn-chase-forest" class="menu-btn">CHASE INTO FOREST</button>
+                <button id="btn-ignore-escape" class="menu-btn">IGNORE</button>
+            </div>
+        </div>
+
+        <!-- Brief / Intro Panel -->
+        <div id="brief-panel" style="display: none;">
+            <div class="modal-content" style="max-width: 550px;">
+                <h2 style="color: #f66;">SHIFT BRIEFING</h2>
+                <p id="brief-text"></p>
+                <button id="btn-brief-done" class="menu-btn">BEGIN ROUNDS</button>
+            </div>
+        </div>
+        <!-- CCTV Panel (FNAF-style) -->
+        <div id="cctv-panel" style="display: none;"></div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <!-- Minimap -->
+    <div id="minimap" class="minimap-container" style="display: none;">
+        <canvas id="minimap-canvas" width="128" height="128"></canvas>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair" class="crosshair" style="display: none;">
+        <div class="crosshair-center"></div>
+    </div>
+
+    <!-- Vignette overlay for dark areas -->
+    <div id="vignette" class="vignette" style="display: none;">
+        <div id="vignette-inner" class="vignette-inner"></div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

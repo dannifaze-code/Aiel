@@ -1,0 +1,924 @@
+/* ========================================
+   ENDLESS - Horror Survival Game
+   Main Stylesheet
+   ======================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: #000;
+    color: #eee;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* ======== SCREENS (Menu, Loading, Game UI) ======== */
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 10;
+}
+
+.screen.active {
+    display: flex !important;
+}
+
+/* ======== MAIN MENU ======== */
+#main-menu {
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a0a00 50%, #000 100%);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.menu-content {
+    text-align: center;
+    padding: 40px;
+    border: 1px solid #333;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.game-title {
+    font-size: 80px;
+    font-weight: bold;
+    color: #ff3333;
+    text-shadow: 0 0 20px #ff0000, 0 0 40px #a00;
+    letter-spacing: 12px;
+    margin-bottom: 10px;
+    animation: titleFlicker 3s infinite;
+}
+
+@keyframes titleFlicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.3; }
+    94% { opacity: 1; }
+    96% { opacity: 0.5; }
+    97% { opacity: 1; }
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #888;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.warning-text {
+    font-size: 14px;
+    color: #ff6600;
+    margin-bottom: 30px;
+    animation: warnPulse 2s infinite;
+}
+
+@keyframes warnPulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; color: #ff3300; }
+}
+
+.menu-btn {
+    display: block;
+    width: 280px;
+    padding: 12px 20px;
+    margin: 8px auto;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #eee;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #555;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.menu-btn:hover {
+    background: rgba(255, 50, 50, 0.2);
+    border-color: #ff3333;
+    color: #ff6666;
+}
+
+.menu-btn.large {
+    padding: 18px 30px;
+    font-size: 22px;
+}
+
+/* ======== LOADING ======== */
+#loading-screen {
+    background: #000;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-content {
+    text-align: center;
+}
+
+.loading-content p {
+    font-size: 20px;
+    color: #888;
+    margin-bottom: 20px;
+}
+
+.loading-bar {
+    width: 300px;
+    height: 10px;
+    background: #222;
+    border: 1px solid #444;
+    overflow: hidden;
+}
+
+#loading-progress {
+    width: 0%;
+    height: 100%;
+    background: #ff3333;
+    transition: width 0.3s;
+}
+
+#loading-text {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #555;
+}
+
+/* ======== GAME UI SCREEN ======== */
+#game-ui {
+    background: transparent !important;
+}
+
+/* ======== GAME UI (TOP) ======== */
+#top-ui {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+}
+
+.ui-money {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #0a0;
+    color: #0f0;
+    padding: 5px 12px;
+    font-size: 16px;
+}
+
+.ui-moral {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #555;
+    color: #888;
+    padding: 5px 12px;
+    font-size: 14px;
+}
+
+/* ======== GAME UI (BOTTOM) ======== */
+#bottom-ui {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 100;
+}
+
+.health-container {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 12px;
+}
+
+.health-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.health-bar, .armor-bar {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 2px;
+}
+
+.health-fill, .armor-segment {
+    width: 150px;
+    height: 20px;
+    background: #3a0000;
+    border: 1px solid #600;
+}
+
+.health-fill {
+    background: linear-gradient(90deg, #a00, #f00);
+    transition: width 0.3s;
+}
+
+.armor-segment {
+    width: 50px;
+    background: #444;
+    border: 1px solid #666;
+    transition: background 0.3s;
+}
+
+.armor-segment.damaged {
+    background: #222;
+    border-color: #333;
+}
+
+.weapon-display {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #555;
+    padding: 8px 12px;
+    text-align: right;
+}
+
+#weapon-name {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+#ammo-count {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ff0;
+}
+
+/* ======== MODALS ======== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #111;
+    border: 2px solid #333;
+    padding: 30px 40px;
+    max-width: 500px;
+    min-width: 300px;
+    text-align: center;
+}
+
+.modal-content h2 {
+    color: #ff3333;
+    font-size: 28px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px #a00;
+}
+
+.return-content h2 {
+    color: #00cc66;
+    text-shadow: 0 0 10px #008040;
+}
+
+.return-content .menu-btn:hover {
+    background: rgba(0, 200, 100, 0.2);
+    border-color: #00cc66;
+    color: #66ffaa;
+}
+
+.level-complete-content h2 {
+    color: #00cc66;
+    text-shadow: 0 0 10px #008040;
+}
+
+.modal-content p {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #aaa;
+}
+
+.about-content {
+    max-width: 600px;
+    text-align: left;
+}
+
+.about-content ul {
+    margin: 8px 0 12px 20px;
+}
+
+.about-content li {
+    margin-bottom: 3px;
+    color: #aaa;
+}
+
+.close-btn {
+    background: none;
+    border: 1px solid #555;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 8px;
+}
+
+.close-btn:hover {
+    border-color: #ff3333;
+    color: #ff3333;
+}
+
+/* ======== PANELS (Prison, Camera, Shop) ======== */
+.panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(5, 5, 5, 0.95);
+    border: 1px solid #444;
+    width: 700px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 150;
+    display: none;
+}
+
+.panel.active {
+    display: block;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #333;
+    background: rgba(30, 0, 0, 0.5);
+}
+
+.panel-header h3 {
+    color: #ff3333;
+    font-size: 18px;
+    letter-spacing: 2px;
+}
+
+/* ======== PRISON PANEL ======== */
+.prison-warning {
+    background: #300;
+    border-top: 1px solid #600;
+    padding: 10px 16px;
+    animation: warningFlash 1s infinite;
+}
+
+@keyframes warningFlash {
+    0%, 100% { background: #300; }
+    50% { background: #500; }
+}
+
+.prison-warning h4 {
+    color: #ff0;
+    margin-bottom: 5px;
+}
+
+.prison-warning p {
+    color: #f88;
+    font-size: 14px;
+}
+
+.prisoner-list {
+    padding: 0;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+.prisoner-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+}
+
+.prisoner-entry:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.prisoner-name {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.prisoner-info {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+}
+
+.risk-low { color: #4a4; }
+.risk-medium { color: #da4; }
+.risk-high { color: #d44; }
+
+.behavior-calm { color: #aaa; }
+.behavior-agitated { color: #da4; }
+.behavior-escape { color: #f00; font-weight: bold; }
+.behavior-selfharm { color: #c0f; }
+
+/* ======== CAMERA PANEL ======== */
+.camera-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 2px;
+}
+
+.camera-feed {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #111;
+    overflow: hidden;
+}
+
+.camera-feed canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.camera-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 6px;
+    font-size: 10px;
+    color: #aaa;
+}
+
+.camera-feed.alert .camera-label {
+    background: rgba(200, 0, 0, 0.7);
+    color: #ff3333;
+    animation: camAlert 0.5s infinite;
+}
+
+@keyframes camAlert {
+    0%, 100% { background: rgba(200, 0, 0, 0.7); }
+    50% { background: rgba(100, 0, 0, 0.4); }
+}
+
+/* ======== WARNING OVERLAY ======== */
+.warning-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(80, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.warning-overlay.active {
+    display: flex;
+}
+
+.warning-content {
+    background: #111;
+    border: 2px solid #ff0000;
+    padding: 30px 40px;
+    text-align: center;
+}
+
+.warning-content h2 {
+    color: #ff3333;
+    font-size: 32px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 15px #a00;
+}
+
+.warning-content p {
+    color: #f88;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* ======== SHOP PANEL ======== */
+.shop-items {
+    padding: 16px;
+}
+
+.shop-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #333;
+    background: rgba(30, 30, 30, 0.3);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.shop-item:hover {
+    border-color: #ff3333;
+    background: rgba(50, 0, 0, 0.2);
+}
+
+.shop-item.owned {
+    border-color: #008040;
+    background: rgba(0, 80, 0, 0.1);
+}
+
+.item-icon {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-info h4 {
+    color: #ccc;
+    margin-bottom: 4px;
+}
+
+.item-info p {
+    color: #777;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.item-price {
+    color: #0f0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* ======== ESCAPEE PREVIEW ======== */
+.escapee-details {
+    text-align: left;
+    margin: 15px 0;
+}
+
+.escapee-details p {
+    margin-bottom: 6px;
+    font-size: 15px;
+}
+
+/* ======== 3D CANVAS ======== */
+#canvas-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    display: none;
+    background: #1a1a2e; /* TEMP: visible indicator */
+}
+
+#canvas-container canvas {
+    display: block;
+}
+
+/* ======== CROSSHAIR ======== */
+.crosshair {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    z-index: 100;
+    display: none;
+}
+
+.crosshair-center {
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+}
+
+/* ======== MINIMAP ======== */
+.minimap-container {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 100;
+    display: none;
+}
+
+#minimap-canvas {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+}
+
+/* ======== VIGNETTE ======== */
+.vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 50;
+    pointer-events: none;
+    display: none;
+}
+
+.vignette-inner {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+/* ======== DAMAGE FLASH ======== */
+.damage-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 150;
+    opacity: 0;
+}
+
+.damage-flash.active {
+    animation: damageFlash 0.3s ease-out;
+}
+
+@keyframes damageFlash {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* ======== SCROLLBAR ======== */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #111;
+}
+::-webkit-scrollbar-thumb {
+    background: #444;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* ======== CCTV PANEL (FNAF-style) ======== */
+#cctv-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 400px;
+    z-index: 150;
+    background: rgba(5, 5, 8, 0.95);
+    border-right: 2px solid #333;
+    display: none;
+    flex-direction: column;
+}
+
+#cctv-panel.active {
+    display: flex;
+}
+
+#cctv-panel .cctv-header {
+    padding: 10px 14px;
+    background: rgba(40, 0, 0, 0.8);
+    border-bottom: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#cctv-panel .cctv-header h3 {
+    color: #ff3333;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.cctv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 4px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.cctv-feed {
+    position: relative;
+    aspect-ratio: 4/3;
+    background: #111;
+    border: 1px solid #222;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.cctv-feed:hover {
+    border-color: #ff3333;
+}
+
+.cctv-feed canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.cctv-feed .feed-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2px 6px;
+    font-size: 9px;
+    color: #aaa;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.cctv-feed.alert {
+    animation: cctvAlertPulse 0.7s infinite;
+}
+
+.cctv-feed.alert .feed-label {
+    background: rgba(200, 0, 0, 0.7);
+    color: #ff3333;
+    font-weight: bold;
+}
+
+@keyframes cctvAlertPulse {
+    0%, 100% { border-color: #222; }
+    50% { border-color: #ff0000; }
+}
+
+.cctv-feed.enlarged {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+/* ======== PRISON ESCAPE WARNING (full screen) ======== */
+.prison-escape-warning {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(100, 0, 0, 0.7);
+    z-index: 160;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    animation: escapeBgPulse 0.5s infinite;
+}
+
+@keyframes escapeBgPulse {
+    0%, 100% { background: rgba(100, 0, 0, 0.7); }
+    50% { background: rgba(60, 0, 0, 0.7); }
+}
+
+.prison-escape-warning.active {
+    display: flex;
+}
+
+/* ======== CELL INTERACTION TOOLTIP ======== */
+#cell-tooltip {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid #555;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #eee;
+    z-index: 100;
+    display: none;
+    pointer-events: none;
+}
+
+#cell-tooltip.active {
+    display: block;
+}
+
+#cell-tooltip .cell-id {
+    color: #f93;
+    font-weight: bold;
+}
+
+#cell-tooltip .interact-prompt {
+    color: #0f0;
+    margin-left: 8px;
+}
+
+/* ======== CELL INSPECTION DIALOG ======== */
+#cell-inspect-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 200;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+#cell-inspect-modal.active {
+    display: flex;
+}
+
+#cell-inspect-modal .inspect-card {
+    background: #111;
+    border: 2px solid #555;
+    width: 500px;
+    padding: 0;
+}
+
+.inspect-card .inspect-header {
+    background: rgba(40, 0, 0, 0.6);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #444;
+}
+
+.inspect-card .inspect-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #ff6666;
+    letter-spacing: 1px;
+}
+
+.inspect-body {
+    padding: 20px;
+}
+
+.inspect-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #1a1a1a;
+    font-size: 14px;
+}
+
+.inspect-stat .label {
+    color: #888;
+}
+
+.inspect-stat .value {
+    color: #ddd;
+}
+
+.inspect-notes {
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(30, 30, 0, 0.3);
+    border-left: 3px solid #da4;
+    font-size: 13px;
+    color: #aaa;
+}
+
+.inspect-actions {
+    padding: 16px 20px;
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid #333;
+}
+
+.inspect-actions .menu-btn {
+    width: auto;
+    padding: 10px 18px;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ======== SHIFT BRIEF PANEL ======== */
+#brief-panel {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 250;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+#brief-panel.active {
+    display: flex;
+}
