@@ -546,6 +546,50 @@
           </div>
         </div>
 
+        <!-- Chrome Built-in AI Toggle -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <strong style="font-size:.85rem">🌐 Chrome Built-in AI</strong>
+            <button class="toggle on" id="chrome-ai-toggle" aria-label="Toggle Chrome AI" role="switch" aria-checked="true"></button>
+          </div>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem">On-device AI via Chrome 128+. No network needed.</div>
+        </div>
+
+        <!-- Aiel Local Engine Toggle -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <strong style="font-size:.85rem">🧠 Aiel Local Engine</strong>
+            <button class="toggle on" id="local-engine-toggle" aria-label="Toggle Local Engine" role="switch" aria-checked="true"></button>
+          </div>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem">Always-available fallback. Pattern matching &amp; knowledge base.</div>
+        </div>
+
+        <!-- Routing Strategy -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="margin-bottom:.4rem"><strong style="font-size:.85rem">🔀 Routing Strategy</strong></div>
+          <select id="routing-strategy" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;color:var(--text);font-size:.82rem">
+            <option value="balanced">Balanced (default)</option>
+            <option value="latency">Lowest Latency</option>
+            <option value="availability">Highest Availability</option>
+          </select>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem">How Aiel picks which AI provider to use.</div>
+        </div>
+
+        <!-- Tandem Learning Toggle -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <strong style="font-size:.85rem">🔄 Tandem Learning</strong>
+            <button class="toggle" id="tandem-learning-toggle" aria-label="Toggle tandem learning" role="switch" aria-checked="false"></button>
+          </div>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem">Query multiple AI providers per message to cross-validate and learn faster.</div>
+        </div>
+
+        <!-- Self-Sufficiency Status -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="margin-bottom:.4rem"><strong style="font-size:.85rem">🎓 Self-Sufficiency</strong></div>
+          <div id="self-sufficiency-status" style="font-size:.82rem;color:var(--text-muted)">Loading…</div>
+        </div>
+
         <button class="btn-primary" id="save-provider-config-btn" style="width:100%;justify-content:center;padding:.6rem;font-size:.85rem;margin-top:.6rem">
           💾 Save Provider Settings
         </button>
@@ -684,6 +728,7 @@
 <script src="data-fetcher.js"></script>
 <script src="knowledge-ingestor.js"></script>
 <script src="ai-learning-bridge.js"></script>
+<script src="confidence-engine.js"></script>
 <script src="ai-mood.js"></script>
 <script src="auto-learner.js"></script>
 <script src="self-training.js"></script>
@@ -832,6 +877,17 @@
     const statsEl = document.getElementById('training-stats-content');
     if (statsEl) {
       const s = status.stats;
+      let sourceHtml = '';
+      if (window.AielLearning && typeof AielLearning.getPatternSourceStats === 'function') {
+        try {
+          const sources = await AielLearning.getPatternSourceStats();
+          const entries = Object.entries(sources);
+          if (entries.length > 0) {
+            sourceHtml = '<div style="margin-top:.4rem;font-weight:600">📡 Knowledge Sources:</div>' +
+              entries.map(([src, count]) => `<div style="font-size:.78rem">  ${src}: <strong>${count}</strong></div>`).join('');
+          }
+        } catch (_) { /* non-critical */ }
+      }
       statsEl.innerHTML = `
         <div>📊 Total items learned: <strong>${s.total || 0}</strong></div>
         <div>📖 Text/Articles: ${s.text || 0} | ❓ Q&A: ${s.qa || 0}</div>
@@ -839,6 +895,7 @@
         <div>🤖 AI-generated: ${s.aiGenerated || 0}</div>
         <div>🎯 Topics mastered: ${status.topicsLearned || 0}</div>
         <div>📅 Last run: ${s.lastRun ? new Date(s.lastRun).toLocaleString() : 'Never'}</div>
+        ${sourceHtml}
       `;
     }
     const logEl = document.getElementById('training-activity-log');
