@@ -162,6 +162,9 @@ const AielLearning = (() => {
           let bestScore = 0;
 
           patterns.forEach((pattern) => {
+            /* Skip patterns whose stored response is garbage */
+            if (!isValidResponse(pattern.response)) return;
+
             const patternWords = pattern.input.split(/\s+/).filter(Boolean);
             const totalWords = inputWords.length + patternWords.length;
           /* Skip patterns where both the user input and the stored pattern have no words
@@ -368,6 +371,63 @@ const AielLearning = (() => {
     });
   }
 
+  /* ── Response quality validation ─────────────────────────────────────── */
+
+  /**
+   * Check whether a response string is valid, human-readable text worth
+   * storing as a learned pattern.  Rejects raw URLs, JSON fragments,
+   * HTML markup, and other non-conversational garbage that models like
+   * DistilGPT2 tend to produce.
+   *
+   * @param {string} text — the AI response to validate
+   * @returns {boolean}
+   */
+  function isValidResponse(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const trimmed = text.trim();
+
+    /* Too short to be useful */
+    if (trimmed.length < 15) return false;
+
+    /* Predominantly a URL (possibly with surrounding whitespace) */
+    if (/^\s*https?:\/\/\S+\s*$/i.test(trimmed)) return false;
+
+    /* Starts with a URL (garbage completion that leads with a link) */
+    if (/^https?:\/\//i.test(trimmed)) return false;
+
+    /* Looks like raw JSON or a JS object literal */
+    if (/^\s*[\[{]/.test(trimmed) && /[\]}]\s*$/.test(trimmed)) return false;
+
+    /* Heavy concentration of JSON / code-like tokens */
+    const jsonTokens = (trimmed.match(/[{}[\]:,"]/g) || []).length;
+    if (jsonTokens > trimmed.length * 0.25) return false;
+
+    /* Mostly HTML tags */
+    const htmlTags = (trimmed.match(/<\/?[a-z][^>]*>/gi) || []).length;
+    if (htmlTags > 3) return false;
+
+    /* Too many URL-like substrings (more than 3) */
+    const urlCount = (trimmed.match(/https?:\/\/\S+/g) || []).length;
+    if (urlCount > 3) return false;
+
+    /* High ratio of non-alphabetic characters → likely gibberish / encoded */
+    const alpha = (trimmed.match(/[a-zA-Z]/g) || []).length;
+    if (alpha < trimmed.length * 0.3) return false;
+
+    return true;
+  }
+
+  /* ── Clear patterns ───────────────────────────────────────────────────── */
+
+  /**
+   * Remove all learned patterns from the database.
+   * @returns {Promise<void>}
+   */
+  function clearPatterns() {
+    return withStore(STORES.PATTERNS, 'readwrite', (store) => store.clear());
+  }
+
   /* ── Helpers ───────────────────────────────────────────────────────────── */
 
   function normalise(text) {
@@ -415,8 +475,10 @@ const AielLearning = (() => {
     searchKnowledge,
     deleteKnowledge,
     clearKnowledge,
+    clearPatterns,
     getStats,
-    extractKeywords
+    extractKeywords,
+    isValidResponse
   };
 })();
 

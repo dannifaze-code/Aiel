@@ -397,9 +397,13 @@
         finaliseMessage(assistantBubble, fullResponse);
       }
 
-      /* Learn from this interaction */
+      /* Learn from this interaction — only store if the response passes
+       * quality validation to prevent poisoning the pattern database with
+       * garbage outputs (URLs, JSON fragments, etc.). */
       const keywords = AielLearning.extractKeywords(userInput);
-      await AielLearning.learnPattern(userInput, fullResponse, keywords);
+      if (AielLearning.isValidResponse(fullResponse)) {
+        await AielLearning.learnPattern(userInput, fullResponse, keywords);
+      }
       triggerLearningIndicator();
 
       /* Check if it was code */
