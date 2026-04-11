@@ -1,2 +1,3 @@
 export * from './client';
-export { AnthropicBedrock as default } from './client';
+export { AnthropicFoundry as default } from './client';
+export type { FoundryClientOptions } from './client';
