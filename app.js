@@ -1094,14 +1094,153 @@
       });
       setAIStatus('ready', `${backend} engine`);
       showToast(`🤖 Aiel AI ready (${backend} engine)`, 'success');
+      /* Wire up provider settings UI */
+      initProviderSettings();
+      updateProviderStatusDisplay();
     } catch (e) {
       setAIStatus('ready', 'local engine');
+      initProviderSettings();
     }
   }
 
   function setAIStatus(state, text) {
     aiStatusDot.className = `ai-status-dot ${state}`;
     aiStatusText.textContent = text;
+  }
+
+  /* ── Provider Settings Wiring ────────────────────────────────────────────── */
+
+  function initProviderSettings() {
+    /* Refresh providers button */
+    $('#refresh-providers-btn')?.addEventListener('click', async () => {
+      setAIStatus('busy', 'Refreshing providers…');
+      try {
+        await AielEngine.refreshProviders();
+        updateProviderStatusDisplay();
+        setAIStatus('ready', `${AielEngine.backend} engine`);
+        showToast('🔄 Providers refreshed', 'success');
+      } catch (_) {
+        setAIStatus('ready', `${AielEngine.backend} engine`);
+      }
+    });
+
+    /* Save provider config button */
+    $('#save-provider-config-btn')?.addEventListener('click', async () => {
+      const config = {
+        ollama: {
+          enabled: $('#ollama-toggle')?.classList.contains('on') ?? true,
+          baseUrl: $('#ollama-url')?.value || 'http://localhost:11434',
+          model: $('#ollama-model')?.value || 'llama3.2:3b'
+        },
+        openaiCompat: {
+          enabled: $('#openai-compat-toggle')?.classList.contains('on') ?? false,
+          baseUrl: $('#openai-compat-url')?.value || '',
+          apiKey: $('#openai-compat-key')?.value || '',
+          model: $('#openai-compat-model')?.value || ''
+        }
+      };
+
+      try {
+        setAIStatus('busy', 'Saving provider config…');
+        await AielEngine.updateProviderConfig(config);
+        updateProviderStatusDisplay();
+        setAIStatus('ready', `${AielEngine.backend} engine`);
+        showToast('💾 Provider settings saved', 'success');
+      } catch (err) {
+        showToast(`❌ Error: ${err.message}`, 'error');
+        setAIStatus('ready', `${AielEngine.backend} engine`);
+      }
+    });
+
+    /* Toggle buttons */
+    $('#ollama-toggle')?.addEventListener('click', function() {
+      this.classList.toggle('on');
+      this.setAttribute('aria-checked', this.classList.contains('on'));
+    });
+    $('#openai-compat-toggle')?.addEventListener('click', function() {
+      this.classList.toggle('on');
+      this.setAttribute('aria-checked', this.classList.contains('on'));
+    });
+
+    /* Listen for provider switch events */
+    window.addEventListener('aiel-provider-switch', (e) => {
+      setAIStatus('busy', `Using ${e.detail.displayName}…`);
+    });
+
+    window.addEventListener('aiel-provider-fallback', (e) => {
+      console.warn(`[Aiel] Provider ${e.detail.failed} failed: ${e.detail.error}. ${e.detail.remaining} providers remaining.`);
+    });
+
+    /* Load saved config into UI */
+    loadProviderConfigUI();
+  }
+
+  async function loadProviderConfigUI() {
+    try {
+      if (typeof AielProviderManager !== 'undefined') {
+        const config = AielProviderManager.getConfig();
+
+        /* Ollama */
+        if (config.ollama) {
+          const toggle = $('#ollama-toggle');
+          if (toggle) {
+            toggle.classList.toggle('on', config.ollama.enabled !== false);
+            toggle.setAttribute('aria-checked', (config.ollama.enabled !== false).toString());
+          }
+          if (config.ollama.baseUrl) $('#ollama-url').value = config.ollama.baseUrl;
+          if (config.ollama.model) $('#ollama-model').value = config.ollama.model;
+        }
+
+        /* OpenAI-compat */
+        if (config.openaiCompat) {
+          const toggle = $('#openai-compat-toggle');
+          if (toggle) {
+            toggle.classList.toggle('on', config.openaiCompat.enabled === true);
+            toggle.setAttribute('aria-checked', (config.openaiCompat.enabled === true).toString());
+          }
+          if (config.openaiCompat.baseUrl) $('#openai-compat-url').value = config.openaiCompat.baseUrl;
+          if (config.openaiCompat.model) $('#openai-compat-model').value = config.openaiCompat.model;
+        }
+      }
+    } catch (_) { /* first run */ }
+  }
+
+  function updateProviderStatusDisplay() {
+    const container = $('#provider-status-list');
+    const backendDisplay = $('#backend-display');
+    if (!container) return;
+
+    try {
+      const statuses = AielEngine.getAllProviderStatus();
+      container.innerHTML = '';
+
+      statuses.forEach(s => {
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:.4rem;font-size:.8rem;padding:.2rem 0';
+
+        const dot = document.createElement('span');
+        dot.style.cssText = `width:8px;height:8px;border-radius:50%;display:inline-block;background:${
+          s.healthy ? '#00d4aa' : s.circuitState === 'open' ? '#ff4444' : '#666'
+        }`;
+        el.appendChild(dot);
+
+        const name = document.createElement('span');
+        name.textContent = `${s.displayName}`;
+        name.style.flex = '1';
+        el.appendChild(name);
+
+        const latency = document.createElement('span');
+        latency.style.cssText = 'color:var(--text-muted);font-size:.75rem';
+        latency.textContent = s.healthy ? `${s.latencyMs}ms` : (s.circuitState === 'open' ? 'circuit open' : 'offline');
+        el.appendChild(latency);
+
+        container.appendChild(el);
+      });
+
+      if (backendDisplay) {
+        backendDisplay.textContent = AielEngine.backend || 'local';
+      }
+    } catch (_) { /* UI update non-critical */ }
   }
 
   /* ── Learning indicator ─────────────────────────────────────────────────── */

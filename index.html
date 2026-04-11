@@ -490,15 +490,65 @@
       </div>
 
       <div class="settings-section">
-        <h4>AI Engine</h4>
+        <h4>AI Providers</h4>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;font-size:.85rem">
-          <div style="margin-bottom:.4rem">
-            <strong>Active Backend:</strong> <span id="backend-display">Detecting…</span>
+          <div style="margin-bottom:.6rem">
+            <strong>Active Provider:</strong> <span id="backend-display">Detecting…</span>
           </div>
-          <div style="color:var(--text-muted);font-size:.8rem">
-            Aiel automatically selects the best available AI engine: Chrome AI → Transformers.js → Local Engine.
+          <div id="provider-status-list" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.6rem">
+            <!-- Populated by JS -->
+          </div>
+          <div style="color:var(--text-muted);font-size:.8rem;margin-bottom:.5rem">
+            Aiel automatically selects the best available AI provider with smart routing and fallback.
+          </div>
+          <button class="btn-secondary" id="refresh-providers-btn" style="width:100%;justify-content:center;padding:.5rem;font-size:.82rem">
+            🔄 Refresh Providers
+          </button>
+        </div>
+
+        <!-- Ollama Configuration -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <strong style="font-size:.85rem">🦙 Ollama (Local)</strong>
+            <button class="toggle on" id="ollama-toggle" aria-label="Toggle Ollama" role="switch" aria-checked="true"></button>
+          </div>
+          <div id="ollama-config" style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem">
+            <label style="display:flex;flex-direction:column;gap:.2rem">
+              <span style="color:var(--text-muted)">Server URL</span>
+              <input type="text" id="ollama-url" value="http://localhost:11434" style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;color:var(--text);font-size:.82rem" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:.2rem">
+              <span style="color:var(--text-muted)">Model</span>
+              <input type="text" id="ollama-model" value="llama3.2:3b" placeholder="e.g. llama3:8b, codellama:7b" style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;color:var(--text);font-size:.82rem" />
+            </label>
           </div>
         </div>
+
+        <!-- OpenAI-Compatible Configuration -->
+        <div style="margin-top:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <strong style="font-size:.85rem">🔗 Custom Endpoint</strong>
+            <button class="toggle" id="openai-compat-toggle" aria-label="Toggle OpenAI-compatible" role="switch" aria-checked="false"></button>
+          </div>
+          <div id="openai-compat-config" style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem">
+            <label style="display:flex;flex-direction:column;gap:.2rem">
+              <span style="color:var(--text-muted)">API Base URL</span>
+              <input type="text" id="openai-compat-url" placeholder="http://localhost:1234/v1" style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;color:var(--text);font-size:.82rem" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:.2rem">
+              <span style="color:var(--text-muted)">API Key (optional)</span>
+              <input type="password" id="openai-compat-key" placeholder="sk-… (leave blank for local)" style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;color:var(--text);font-size:.82rem" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:.2rem">
+              <span style="color:var(--text-muted)">Model</span>
+              <input type="text" id="openai-compat-model" placeholder="e.g. gpt-3.5-turbo, mistral" style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:.4rem .6rem;color:var(--text);font-size:.82rem" />
+            </label>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="save-provider-config-btn" style="width:100%;justify-content:center;padding:.6rem;font-size:.85rem;margin-top:.6rem">
+          💾 Save Provider Settings
+        </button>
       </div>
 
       <div class="settings-section">
@@ -572,14 +622,18 @@
       <div class="settings-section">
         <h4>About Aiel</h4>
         <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:.82rem;color:var(--text-muted);line-height:1.7">
-          <strong style="color:var(--text)">Aiel AI v1.0</strong><br/>
+          <strong style="color:var(--text)">Aiel AI v2.0</strong><br/>
           A fully free, autonomous AI assistant.<br/>
-          No API keys · No server · Works offline<br/>
+          No API keys required · Works offline<br/>
           Built with pure HTML, CSS &amp; JavaScript<br/><br/>
-          <strong style="color:var(--text)">AI Engines:</strong><br/>
-          1. Chrome Built-in AI (if available)<br/>
-          2. Transformers.js (HuggingFace)<br/>
-          3. Aiel Local Engine (always available)<br/><br/>
+          <strong style="color:var(--text)">AI Providers:</strong><br/>
+          1. Ollama (local, powerful models)<br/>
+          2. OpenAI-compatible endpoints<br/>
+          3. Chrome Built-in AI (on-device)<br/>
+          4. Aiel Local Engine (always available)<br/><br/>
+          <strong style="color:var(--text)">Smart Routing:</strong><br/>
+          Auto-selects the best provider with<br/>
+          health checks, latency scoring &amp; fallback.<br/><br/>
           <strong style="color:var(--text)">Data Storage:</strong><br/>
           All data is stored locally in IndexedDB.<br/>
           Nothing is sent to any server.
@@ -633,6 +687,24 @@
 <script src="ai-mood.js"></script>
 <script src="auto-learner.js"></script>
 <script src="self-training.js"></script>
+
+<!-- Provider system (v2.0) -->
+<script src="providers/stream-decoder.js"></script>
+<script src="providers/provider-base.js"></script>
+<script src="providers/chrome-ai-provider.js"></script>
+<script src="providers/ollama-provider.js"></script>
+<script src="providers/openai-compat-provider.js"></script>
+<script src="providers/local-provider.js"></script>
+<script src="providers/provider-manager.js"></script>
+
+<!-- Custom model (v2.0) -->
+<script src="model/intent-classifier.js"></script>
+<script src="model/topic-extractor.js"></script>
+<script src="model/confidence-scorer.js"></script>
+<script src="model/response-generator.js"></script>
+<script src="model/aiel-model.js"></script>
+
+<!-- Core AI engine + graph -->
 <script src="ai-engine.js"></script>
 <script src="ai-graph.js"></script>
 <script src="app.js"></script>
