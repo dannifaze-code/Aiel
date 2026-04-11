@@ -1233,6 +1233,11 @@
       console.warn(`[Aiel] Provider ${e.detail.failed} failed: ${e.detail.error}. ${e.detail.remaining} providers remaining.`);
     });
 
+    /* Refresh provider status dots whenever auto-probe finishes */
+    window.addEventListener('aiel-provider-status-update', () => {
+      updateProviderStatusDisplay();
+    });
+
     /* Load saved config into UI */
     loadProviderConfigUI();
   }

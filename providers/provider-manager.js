@@ -191,6 +191,12 @@ const AielProviderManager = (() => {
             }));
           }
         }
+        /* Always notify UI of status changes so dots refresh */
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('aiel-provider-status-update', {
+            detail: { statuses: getAllStatus() }
+          }));
+        }
       } catch (_) { /* non-critical */ }
     }, intervalMs);
   }

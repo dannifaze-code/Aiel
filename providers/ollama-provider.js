@@ -45,12 +45,18 @@ const AielOllamaProvider = (() => {
 
     async checkHealth() {
       try {
+        console.log(`[Aiel] Ollama health check → ${this.baseUrl}/api/tags`);
         const resp = await this._fetch(`${this.baseUrl}/api/tags`);
-        if (!resp.ok) return false;
+        if (!resp.ok) {
+          console.warn(`[Aiel] Ollama health check failed: HTTP ${resp.status}`);
+          return false;
+        }
         const data = await resp.json();
         this._models = (data.models || []).map(m => m.name);
+        console.log(`[Aiel] Ollama online — ${this._models.length} model(s): ${this._models.join(', ') || '(none)'}`);
         return true;
-      } catch (_) {
+      } catch (err) {
+        console.warn(`[Aiel] Ollama unreachable at ${this.baseUrl}: ${err.message}`);
         return false;
       }
     }
@@ -152,7 +158,9 @@ const AielOllamaProvider = (() => {
 
     _formatMessages(messages) {
       return messages.map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        role: msg.role === 'system' ? 'system'
+            : msg.role === 'assistant' ? 'assistant'
+            : 'user',
         content: msg.content
       }));
     }
