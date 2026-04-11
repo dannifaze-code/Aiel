@@ -241,7 +241,7 @@ const AielProviderBase = (() => {
           this.circuit.onFailure();
         }
       } catch (err) {
-        console.warn(`[Aiel] Probe error for ${this.name}:`, err.message);
+        console.warn(`[Aiel] Probe error for ${this.name}:`, err.message || String(err));
         this._available = false;
         this._healthy = false;
         this._latencyMs = 9999;
