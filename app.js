@@ -54,6 +54,9 @@
     applySavedPrefs();
     registerServiceWorker();
     initSelfTraining();
+    initMoodSystem();
+    initGraphPanel();
+    initFeedAIButton();
   }
 
   /* ── Landing page ───────────────────────────────────────────────────────── */
@@ -1326,6 +1329,7 @@
     btn.textContent = '👍';
     btn.style.color = 'var(--accent)';
     showToast('👍 Thanks for the feedback!', 'success');
+    if (typeof AielMood !== 'undefined') AielMood.onUserFeedback(true);
   }
 
   async function regenerateLast() {
@@ -1363,6 +1367,227 @@
       try {
         await AielSelfTrainer.init();
       } catch (_) { /* self-training is optional */ }
+    }
+  }
+
+  /* ── Mood system init ──────────────────────────────────────────────────── */
+
+  async function initMoodSystem() {
+    if (typeof AielMood !== 'undefined') {
+      try {
+        await AielMood.init();
+      } catch (_) { /* mood is optional */ }
+    }
+  }
+
+  /* ── Graph panel init ──────────────────────────────────────────────────── */
+
+  function initGraphPanel() {
+    if (typeof AielGraph === 'undefined') return;
+
+    AielGraph.init();
+
+    /* Graph toggle button */
+    const graphToggleBtn = $('#graph-toggle-btn');
+    const graphPanel = $('#ai-graph-panel');
+
+    if (graphToggleBtn && graphPanel) {
+      graphToggleBtn.addEventListener('click', () => {
+        const isOpen = graphPanel.classList.toggle('open');
+        if (isOpen) {
+          AielGraph.show();
+        } else {
+          AielGraph.hide();
+        }
+      });
+    }
+  }
+
+  /* ── Feed AI button init ───────────────────────────────────────────────── */
+
+  function initFeedAIButton() {
+    const feedBtn = $('#feed-ai-btn');
+    const dropdown = $('#feed-ai-dropdown');
+    if (!feedBtn || !dropdown) return;
+
+    /* Toggle dropdown */
+    feedBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.classList.toggle('open');
+      feedBtn.setAttribute('aria-expanded', isOpen.toString());
+      if (isOpen) updateFeedDropdownStatus();
+    });
+
+    /* Close dropdown on outside click */
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && !feedBtn.contains(e.target)) {
+        dropdown.classList.remove('open');
+        feedBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    /* Auto-Learn Now */
+    $('#feed-auto-learn')?.addEventListener('click', async () => {
+      const btn = $('#feed-auto-learn');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = '⏳';
+      setFeedStatus('busy', 'Learning from all sources…');
+      feedBtn.classList.add('learning');
+
+      try {
+        let total = 0;
+
+        /* Use self-trainer burst */
+        if (typeof AielSelfTrainer !== 'undefined') {
+          total = await AielSelfTrainer.trainNow();
+        }
+
+        setFeedStatus('idle', `Learned ${total} items!`);
+        showToast(`🧠 Auto-learned ${total} items from multiple sources`, 'success');
+      } catch (e) {
+        setFeedStatus('idle', 'Learning failed');
+        showToast(`❌ Learning error: ${e.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = '⚡';
+        feedBtn.classList.remove('learning');
+        await updateMemoryStats();
+      }
+    });
+
+    /* Browse & Learn */
+    $('#feed-browse-learn')?.addEventListener('click', async () => {
+      const btn = $('#feed-browse-learn');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = '⏳';
+      setFeedStatus('busy', 'Browsing the web…');
+      feedBtn.classList.add('learning');
+
+      try {
+        if (typeof AielAutoLearner !== 'undefined') {
+          const result = await AielAutoLearner.browseAndLearn();
+          const sourceNames = Object.entries(result.sources)
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ');
+          setFeedStatus('idle', `Learned ${result.total} items`);
+          showToast(`🌐 Browsed & learned ${result.total} items (${sourceNames || 'none'})`, 'success');
+        }
+      } catch (e) {
+        setFeedStatus('idle', 'Browse failed');
+        showToast(`❌ Browse error: ${e.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = '🌐';
+        feedBtn.classList.remove('learning');
+        await updateMemoryStats();
+      }
+    });
+
+    /* Learn from URL */
+    const urlInput = $('#feed-url-input');
+    const urlGoBtn = $('#feed-url-go');
+
+    async function handleURLLearn() {
+      const url = urlInput?.value?.trim();
+      if (!url) return;
+
+      urlGoBtn.disabled = true;
+      urlGoBtn.textContent = '⏳';
+      setFeedStatus('busy', `Learning from URL…`);
+      feedBtn.classList.add('learning');
+
+      try {
+        if (typeof AielAutoLearner !== 'undefined') {
+          const result = await AielAutoLearner.learnFromURL(url);
+          if (result.success) {
+            setFeedStatus('idle', `Learned ${result.count} items from URL`);
+            showToast(`🔗 Learned ${result.count} items from ${new URL(url).hostname}`, 'success');
+            urlInput.value = '';
+          } else {
+            setFeedStatus('idle', result.error || 'Failed');
+            showToast(`❌ ${result.error || 'Could not learn from URL'}`, 'error');
+          }
+        }
+      } catch (e) {
+        setFeedStatus('idle', 'URL learning failed');
+        showToast(`❌ Error: ${e.message}`, 'error');
+      } finally {
+        urlGoBtn.disabled = false;
+        urlGoBtn.textContent = '→';
+        feedBtn.classList.remove('learning');
+        await updateMemoryStats();
+      }
+    }
+
+    urlGoBtn?.addEventListener('click', handleURLLearn);
+    urlInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleURLLearn();
+    });
+
+    /* Continuous Learning toggle */
+    const continuousToggle = $('#feed-continuous-toggle');
+    if (continuousToggle) {
+      /* Sync with existing training state */
+      if (typeof AielSelfTrainer !== 'undefined' && AielSelfTrainer.isActive) {
+        continuousToggle.classList.add('on');
+        continuousToggle.setAttribute('aria-checked', 'true');
+      }
+
+      continuousToggle.addEventListener('click', async function() {
+        const isOn = this.classList.toggle('on');
+        this.setAttribute('aria-checked', isOn.toString());
+
+        if (typeof AielSelfTrainer !== 'undefined') {
+          await AielSelfTrainer.updateConfig({ enabled: isOn });
+
+          /* Sync with settings panel toggle */
+          const settingsToggle = $('#training-toggle');
+          if (settingsToggle) {
+            settingsToggle.classList.toggle('on', isOn);
+            settingsToggle.setAttribute('aria-checked', isOn.toString());
+          }
+        }
+
+        updateFeedDropdownStatus();
+        updateTrainingStatusIndicator();
+        showToast(isOn ? '🧠 Continuous learning enabled' : '⏸️ Continuous learning paused', 'info');
+      });
+    }
+
+    /* Listen for training state changes to keep UI in sync */
+    window.addEventListener('aiel-training-update', () => {
+      updateFeedDropdownStatus();
+    });
+  }
+
+  function setFeedStatus(state, label) {
+    const dot = $('#feed-status-dot');
+    const statusEl = $('#feed-dropdown-status');
+    const statusIcon = statusEl?.querySelector('.feed-status-icon');
+    const statusLabel = statusEl?.querySelector('.feed-status-label');
+
+    if (dot) {
+      dot.className = 'feed-status-dot';
+      if (state === 'busy') dot.classList.add('busy');
+      else if (state === 'active') dot.classList.add('active');
+    }
+
+    if (statusIcon) {
+      const icons = { idle: '⏸️', busy: '⏳', active: '✅' };
+      statusIcon.textContent = icons[state] || '⏸️';
+    }
+
+    if (statusLabel) {
+      statusLabel.textContent = label || 'Idle — ready to learn';
+    }
+  }
+
+  function updateFeedDropdownStatus() {
+    if (typeof AielSelfTrainer !== 'undefined' && AielSelfTrainer.isActive) {
+      setFeedStatus('active', 'Continuous learning active');
+    } else {
+      setFeedStatus('idle', 'Idle — ready to learn');
     }
   }
 

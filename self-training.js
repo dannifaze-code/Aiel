@@ -154,13 +154,14 @@ const AielSelfTrainer = (() => {
           /* Emit custom event for UI updates */
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('aiel-training-update', {
-              detail: { source, count, total: stats.total + count }
+              detail: { source, count, total: stats.total + count, category: source }
             }));
           }
         }
         return; /* One source per cycle */
       } catch (err) {
         logActivity(`❌ Error fetching from ${source}: ${err.message}`);
+        if (typeof AielMood !== 'undefined') AielMood.onFetchFailed();
       }
     }
   }

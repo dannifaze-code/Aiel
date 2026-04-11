@@ -1144,6 +1144,275 @@ footer a { color: var(--text-muted); }
 .send-btn:active  { transform: scale(.95); }
 .send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
+/* ── Feed AI Button & Dropdown ───────────────────────────────────────────── */
+
+.feed-ai-btn { position: relative; }
+.feed-ai-btn.learning {
+  animation: feedPulse 1.5s ease-in-out infinite;
+  color: var(--accent) !important;
+}
+
+@keyframes feedPulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.15); filter: drop-shadow(0 0 6px var(--primary-glow)); }
+}
+
+.feed-ai-dropdown {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: 290px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  overflow: hidden;
+}
+.feed-ai-dropdown.open { display: block; }
+
+.feed-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  font-weight: 700;
+  font-size: .88rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.feed-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transition: background var(--t-fast);
+}
+.feed-status-dot.active { background: var(--accent); animation: feedPulse 2s infinite; }
+.feed-status-dot.busy   { background: var(--warn); animation: feedPulse 1s infinite; }
+
+.feed-dropdown-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .65rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: .85rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--t-fast);
+}
+.feed-dropdown-item:hover { background: var(--surface2); }
+.feed-dropdown-item:disabled { opacity: .5; cursor: not-allowed; }
+
+.feed-item-desc {
+  width: 100%;
+  font-size: .72rem;
+  color: var(--text-faint);
+  margin-top: -.1rem;
+}
+
+.feed-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+}
+
+.feed-dropdown-url-row {
+  display: flex;
+  gap: .4rem;
+  padding: .6rem .75rem;
+}
+.feed-dropdown-url-row input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .4rem .6rem;
+  color: var(--text);
+  font-size: .82rem;
+  outline: none;
+}
+.feed-dropdown-url-row input:focus { border-color: var(--primary); }
+
+.feed-url-go {
+  width: 32px; height: 32px;
+  display: grid;
+  place-items: center;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: all var(--t-fast);
+}
+.feed-url-go:hover { background: var(--primary-dark); }
+
+.feed-dropdown-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .6rem 1rem;
+  font-size: .85rem;
+}
+
+.feed-dropdown-status {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem 1rem .65rem;
+  font-size: .78rem;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+}
+
+/* ── AI Graph Panel ──────────────────────────────────────────────────────── */
+
+.ai-graph-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--t-slow) ease, opacity var(--t-slow) ease;
+  opacity: 0;
+  border-bottom: 1px solid transparent;
+  background: var(--surface);
+}
+.ai-graph-panel.open {
+  max-height: 280px;
+  opacity: 1;
+  border-bottom-color: var(--border);
+}
+
+.ai-graph-panel-inner {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  min-height: 200px;
+}
+
+.graph-section-title {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  margin-bottom: .4rem;
+}
+
+.graph-chart-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.learning-graph-canvas {
+  flex: 1;
+  width: 100%;
+  min-height: 150px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+}
+
+.graph-mood-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.mood-gauge-canvas {
+  width: 120px;
+  height: 120px;
+}
+
+.graph-feed-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ai-activity-feed {
+  flex: 1;
+  overflow-y: auto;
+  font-size: .78rem;
+  max-height: 130px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  padding: .4rem;
+}
+
+.feed-empty {
+  text-align: center;
+  color: var(--text-faint);
+  padding: 1rem .5rem;
+  font-size: .78rem;
+}
+
+.feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  padding: .25rem .3rem;
+  border-bottom: 1px solid rgba(108,99,255,.06);
+}
+.feed-item:last-child { border-bottom: none; }
+
+.feed-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.feed-msg {
+  flex: 1;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.feed-time {
+  font-size: .65rem;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ai-graph-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .3rem;
+  margin-top: .4rem;
+}
+
+.graph-stat {
+  text-align: center;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: .3rem .2rem;
+}
+
+.graph-stat-val {
+  display: block;
+  font-weight: 700;
+  font-size: .82rem;
+  color: var(--primary);
+}
+
+.graph-stat-label {
+  font-size: .62rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
 .input-footer {
   padding: .3rem .75rem .6rem;
   display: flex;
@@ -1401,6 +1670,7 @@ footer a { color: var(--text-muted); }
   border-radius: 10px;
   background: var(--surface3);
   transition: all var(--t);
+  cursor: pointer;
 }
 .training-status-indicator.active {
   color: var(--accent);
@@ -1568,6 +1838,20 @@ footer a { color: var(--text-muted); }
   .settings-panel { width: 100%; }
 
   .training-status-indicator .training-status-text { display: none; }
+
+  .ai-graph-panel.open { max-height: 500px; }
+  .ai-graph-panel-inner {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: .5rem;
+    padding: .5rem;
+  }
+  .learning-graph-canvas { min-height: 100px; }
+  .mood-gauge-canvas { width: 80px; height: 80px; }
+  .graph-mood-section { flex-direction: row; gap: 1rem; }
+  .ai-activity-feed { max-height: 80px; }
+
+  .feed-ai-dropdown { right: -60px; width: 260px; }
 }
 
 @media (max-width: 480px) {

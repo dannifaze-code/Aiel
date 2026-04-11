@@ -153,6 +153,8 @@ const AielEngine = (() => {
     /* Use learned pattern if confidence is high enough */
     if (learned && learned.score > 0.7) {
       response = `💡 Based on what I've learned: ${learned.response}`;
+      /* Notify mood system of successful pattern match */
+      if (typeof AielMood !== 'undefined') AielMood.onPatternMatched(learned.score);
       yield* streamText(response);
       return;
     }
@@ -161,6 +163,8 @@ const AielEngine = (() => {
     const knowledgeResult = await knowledgeLookup(input, keywords);
     if (knowledgeResult) {
       response = `🧠 From my knowledge base: ${knowledgeResult}`;
+      /* Notify mood system of knowledge match */
+      if (typeof AielMood !== 'undefined') AielMood.onPatternMatched(0.6);
       yield* streamText(response);
       return;
     }
