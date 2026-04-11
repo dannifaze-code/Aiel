@@ -1,87 +1,78 @@
-# <img src=".github/logo.svg" alt="" width="32"> Claude SDK for AWS Bedrock
+# <img src=".github/logo.svg" alt="" width="32"> Claude SDK for Microsoft Foundry
 
-[![NPM version](https://img.shields.io/npm/v/@anthropic-ai/bedrock-sdk.svg?color=blue)](https://npmjs.org/package/@anthropic-ai/bedrock-sdk)
+[![NPM version](https://img.shields.io/npm/v/@anthropic-ai/foundry-sdk.svg?color=blue)](https://npmjs.org/package/@anthropic-ai/foundry-sdk)
 
-This library provides convenient access to the Claude API via AWS Bedrock. See the [documentation](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock) for more details.
+This library provides convenient access to the Claude API via Microsoft Azure AI Foundry. See the [documentation](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry) for more details.
 
 For the direct Claude API at api.anthropic.com, see [`@anthropic-ai/sdk`](https://github.com/anthropics/anthropic-sdk-typescript).
 
 ## Installation
 
-```sh
-npm install @anthropic-ai/bedrock-sdk
+```bash
+npm install @anthropic-ai/foundry-sdk
 ```
 
 ## Usage
 
-<!-- prettier-ignore -->
-```js
-import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
+### Basic Usage with API Key
 
-// Note: this assumes you have configured AWS credentials in a way
-// that the AWS Node SDK will recognise, typicaly a shared `~/.aws/credentials`
-// file or `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` environment variables.
-//
-// https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html
-const client = new AnthropicBedrock();
+```ts
+import { AnthropicFoundry } from '@anthropic-ai/foundry-sdk';
 
-async function main() {
-  const message = await client.messages.create({
-    model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-    messages: [
-      {
-        role: 'user',
-        content: 'Hello!',
-      },
-    ],
-    max_tokens: 1024,
-  });
-  console.log(message);
-}
+const client = new AnthropicFoundry({
+  apiKey: process.env.ANTHROPIC_FOUNDRY_API_KEY, // defaults to process.env.ANTHROPIC_FOUNDRY_API_KEY
+  resource: 'example-resource.azure.anthropic.com', // your Azure resource
+});
 
-main();
+const message = await client.messages.create({
+  model: 'claude-3-5-sonnet-20241022',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Hello, Claude!' }],
+});
+
+console.log(message.content);
 ```
 
-### Custom Credential Provider (for non-Node environments)
+### Using Azure AD Token Provider
 
-For non-Node environments like Vercel Edge Runtime where the default AWS credential provider chain isn't available, you can provide a custom credential resolver:
+For enhanced security, you can use Azure AD (Microsoft Entra) authentication instead of an API key:
 
-```js
-import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
+```ts
+import { AnthropicFoundry } from '@anthropic-ai/foundry-sdk';
+import { getBearerTokenProvider, DefaultAzureCredential } from '@azure/identity';
 
-const customCredentialProvider = async () => {
-  // Return an object that implements the AwsCredentialIdentityProvider interface
-  return {
-    accessKeyId: 'your-aws-access-key-id',
-    secretAccessKey: 'your-aws-secret-access-key',
-    sessionToken: 'your-aws-session-token', // Optional, if using temporary credentials
-  };
-};
+const credential = new DefaultAzureCredential();
+const scope = 'https://ai.azure.com/.default';
+const azureADTokenProvider = getBearerTokenProvider(credential, scope);
 
-const client = new AnthropicBedrock({
-  awsRegion: 'us-east-1',
-  providerChainResolver: async () => {
-    return customCredentialProvider;
-  },
+const client = new AnthropicFoundry({
+  azureADTokenProvider,
+  resource: 'example-resource.azure.anthropic.com', // your Azure resource
+});
+
+const message = await client.messages.create({
+  model: 'claude-3-5-sonnet-20241022',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Hello, Claude!' }],
+});
+
+console.log(message.content);
+```
+
+### Using Model Deployments
+
+If you have a model deployment configured, you can specify it to have the SDK automatically construct the correct URL path:
+
+```ts
+const client = new AnthropicFoundry({
+  apiKey: process.env.ANTHROPIC_FOUNDRY_API_KEY,
+  resource: 'example-resource.azure.anthropic.com',
+});
+
+// The SDK will automatically use /deployments/my-claude-deployment/messages
+const message = await client.messages.create({
+  model: 'claude-3-5-sonnet-20241022',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Hello!' }],
 });
 ```
-
-For more details on how to use the SDK, see the [README.md for the main Claude SDK](https://github.com/anthropics/anthropic-sdk-typescript/tree/main#readme) which this library extends.
-
-## Requirements
-
-TypeScript >= 4.5 is supported.
-
-The following runtimes are supported:
-
-- Node.js 18 LTS or later ([non-EOL](https://endoflife.date/nodejs)) versions.
-- Deno v1.28.0 or higher, using `import { AnthropicBedrock } from "npm:@anthropic-ai/bedrock-sdk"`.
-- Bun 1.0 or later.
-- Cloudflare Workers.
-- Vercel Edge Runtime.
-- Jest 28 or greater with the `"node"` environment (`"jsdom"` is not supported at this time).
-- Nitro v2.6 or greater.
-
-Note that React Native is not supported at this time.
-
-If you are interested in other runtime environments, please open or upvote an issue on GitHub.

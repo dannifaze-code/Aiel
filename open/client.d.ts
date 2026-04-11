@@ -1,83 +1,58 @@
-import { BaseAnthropic, ClientOptions as CoreClientOptions } from '@anthropic-ai/sdk/client';
-import * as Resources from '@anthropic-ai/sdk/resources/index';
-import { AwsCredentialIdentityProvider } from '@smithy/types';
-import { FinalRequestOptions } from "./internal/request-options.js";
-import { FinalizedRequestInit } from "./internal/types.js";
+import type { NullableHeaders } from "./internal/headers.js";
+import { Anthropic, ClientOptions } from '@anthropic-ai/sdk/client';
 export { BaseAnthropic } from '@anthropic-ai/sdk/client';
-export type ClientOptions = Omit<CoreClientOptions, 'apiKey' | 'authToken'> & {
-    awsSecretKey?: string | null | undefined;
-    awsAccessKey?: string | null | undefined;
+import * as Resources from '@anthropic-ai/sdk/resources/index';
+/** API Client for interfacing with the Anthropic Foundry API. */
+export interface FoundryClientOptions extends ClientOptions {
     /**
-     * Defaults to process.env['AWS_REGION'].
+     * The name of your Foundry resource.
+     *
+     * For example, `https://{resource}.services.ai.azure.com/anthropic/v1/messages`.
      */
-    awsRegion?: string | undefined;
-    awsSessionToken?: string | null | undefined;
-    skipAuth?: boolean;
-    /** Custom provider chain resolver for AWS credentials. Useful for non-Node environments, like edge workers, where the default credential provider chain may not work. */
-    providerChainResolver?: (() => Promise<AwsCredentialIdentityProvider>) | null;
-};
-type BothStaticCreds = {
-    awsAccessKey: string;
-    awsSecretKey: string;
-    awsSessionToken?: string | null | undefined;
-};
-type NoStaticCreds = {
-    awsAccessKey?: null | undefined;
-    awsSecretKey?: null | undefined;
-    awsSessionToken?: null | undefined;
-};
-type AccessOnly = {
-    awsAccessKey: string;
-    awsSecretKey?: null | undefined;
-    awsSessionToken?: string | null | undefined;
-};
-type SecretOnly = {
-    awsSecretKey: string;
-    awsAccessKey?: null | undefined;
-    awsSessionToken?: string | null | undefined;
-};
-/** API Client for interfacing with the Anthropic Bedrock API. */
-export declare class AnthropicBedrock extends BaseAnthropic {
-    awsSecretKey: string | null;
-    awsAccessKey: string | null;
-    awsRegion: string;
-    awsSessionToken: string | null;
-    skipAuth: boolean;
-    providerChainResolver: (() => Promise<AwsCredentialIdentityProvider>) | null;
-    constructor(opts: ClientOptions & BothStaticCreds);
-    constructor(opts?: ClientOptions & NoStaticCreds);
+    resource?: string | undefined;
     /**
-     * @deprecated Passing only `awsAccessKey` without `awsSecretKey` is deprecated.
-     * Provide both keys, or provide neither and rely on the AWS credential provider chain.
+     * Defaults to process.env['ANTHROPIC_FOUNDRY_API_KEY'].
      */
-    constructor(opts: ClientOptions & AccessOnly);
+    apiKey?: string | undefined;
     /**
-     * @deprecated Passing only `awsSecretKey` without `awsAccessKey` is deprecated.
-     * Provide both keys, or provide neither and rely on the AWS credential provider chain.
+     * A function that returns an access token for Microsoft Entra (formerly known as Azure Active Directory),
+     * which will be invoked on every request.
      */
-    constructor(opts: ClientOptions & SecretOnly);
+    azureADTokenProvider?: (() => Promise<string>) | undefined;
+}
+/** API Client for interfacing with the Anthropic Foundry API. */
+export declare class AnthropicFoundry extends Anthropic {
+    resource: string | null;
     messages: MessagesResource;
-    completions: Resources.Completions;
     beta: BetaResource;
+    models: undefined;
+    /**
+     * API Client for interfacing with the Anthropic Foundry API.
+     *
+     * @param {string | undefined} [opts.resource=process.env['ANTHROPIC_FOUNDRY_RESOURCE'] ?? undefined] - Your Foundry resource name
+     * @param {string | undefined} [opts.apiKey=process.env['ANTHROPIC_FOUNDRY_API_KEY'] ?? undefined]
+     * @param {string | null | undefined} [opts.organization=process.env['ANTHROPIC_ORG_ID'] ?? null]
+     * @param {string} [opts.baseURL=process.env['ANTHROPIC_FOUNDRY_BASE_URL']] - Sets the base URL for the API, e.g. `https://example-resource.azure.anthropic.com/anthropic/`.
+     * @param {number} [opts.timeout=10 minutes] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
+     * @param {number} [opts.httpAgent] - An HTTP agent used to manage HTTP(s) connections.
+     * @param {Fetch} [opts.fetch] - Specify a custom `fetch` function implementation.
+     * @param {number} [opts.maxRetries=2] - The maximum number of times the client will retry a request.
+     * @param {Headers} opts.defaultHeaders - Default headers to include with every request to the API.
+     * @param {DefaultQuery} opts.defaultQuery - Default query parameters to include with every request to the API.
+     * @param {boolean} [opts.dangerouslyAllowBrowser=false] - By default, client-side use of this library is not allowed, as it risks exposing your secret API credentials to attackers.
+     */
+    constructor({ baseURL, apiKey, resource, azureADTokenProvider, dangerouslyAllowBrowser, ...opts }?: FoundryClientOptions);
+    protected authHeaders(): Promise<NullableHeaders | undefined>;
     protected validateHeaders(): void;
-    protected prepareRequest(request: FinalizedRequestInit, { url, options }: {
-        url: string;
-        options: FinalRequestOptions;
-    }): Promise<void>;
-    buildRequest(options: FinalRequestOptions): Promise<{
-        req: FinalizedRequestInit;
-        url: string;
-        timeout: number;
-    }>;
 }
 /**
- * The Bedrock API does not currently support token counting or the Batch API.
+ * The Anthropic Foundry does not currently support the Batch API.
  */
-type MessagesResource = Omit<Resources.Messages, 'batches' | 'countTokens'>;
+type MessagesResource = Omit<Resources.Messages, 'batches'>;
 /**
- * The Bedrock API does not currently support prompt caching, token counting or the Batch API.
+ * The Anthropic Foundry does not currently support the Batch API.
  */
-type BetaResource = Omit<Resources.Beta, 'promptCaching' | 'messages'> & {
-    messages: Omit<Resources.Beta['messages'], 'batches' | 'countTokens'>;
+type BetaResource = Omit<Resources.Beta, 'messages'> & {
+    messages: Omit<Resources.Beta['messages'], 'batches'>;
 };
 //# sourceMappingURL=client.d.ts.map

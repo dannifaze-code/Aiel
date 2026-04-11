@@ -20,5 +20,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = void 0;
 __exportStar(require("./client.js"), exports);
 var client_1 = require("./client.js");
-Object.defineProperty(exports, "default", { enumerable: true, get: function () { return client_1.AnthropicBedrock; } });
+Object.defineProperty(exports, "default", { enumerable: true, get: function () { return client_1.AnthropicFoundry; } });
 //# sourceMappingURL=index.js.map
