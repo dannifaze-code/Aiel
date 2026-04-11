@@ -151,7 +151,7 @@ const AielDataFetcher = (() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
-      const resp = await fetch(`http://numbersapi.com/${num}/${type}`, { signal: controller.signal });
+      const resp = await fetch(`https://numbersapi.com/${num}/${type}`, { signal: controller.signal });
       if (!resp.ok) return null;
       const text = await resp.text();
       lastFetch['numbers'] = Date.now();
@@ -267,8 +267,13 @@ const AielDataFetcher = (() => {
   function decodeEntities(str) {
     const textarea = typeof document !== 'undefined' ? document.createElement('textarea') : null;
     if (textarea) { textarea.innerHTML = str; return textarea.value; }
-    return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-              .replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+    /* Manual decode without double-unescaping: decode specific entities in correct order */
+    return str
+      .replace(/&#039;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&gt;/g, '>')
+      .replace(/&lt;/g, '<')
+      .replace(/&amp;/g, '&');
   }
 
   /* ── Public API ─────────────────────────────────────────────────────────── */
