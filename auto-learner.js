@@ -14,6 +14,7 @@ const AielAutoLearner = (() => {
   const MAX_SESSION_FETCHES = 40;
 
   const FETCH_TIMEOUT_MS = 12000;
+  const MAX_ITEMS_PER_URL = 10;
   const REMOVE_SELECTORS = 'script,style,nav,footer,header,aside,iframe,noscript,.ad,.ads,.advertisement,.sidebar,.menu,.nav,[role="navigation"],[role="banner"]';
 
   /* Module-level stop words for keyword extraction */
@@ -355,7 +356,7 @@ const AielAutoLearner = (() => {
       }
     });
 
-    return items.slice(0, 10); /* Cap at 10 items per URL */
+    return items.slice(0, MAX_ITEMS_PER_URL);
   }
 
   /* ── Ingestion helper ───────────────────────────────────────────────────── */
