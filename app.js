@@ -53,6 +53,7 @@
     initAIEngine();
     applySavedPrefs();
     registerServiceWorker();
+    initSelfTraining();
   }
 
   /* ── Landing page ───────────────────────────────────────────────────────── */
@@ -260,6 +261,18 @@
       }
     });
 
+    /* Knowledge panel */
+    $('#knowledge-close')?.addEventListener('click', () => {
+      $('.knowledge-panel')?.classList.remove('open');
+      /* Switch back to chat mode */
+      setMode('chat');
+    });
+
+    $('#knowledge-search-input')?.addEventListener('input', (e) => {
+      const query = e.target.value;
+      refreshKnowledgeContent(query);
+    });
+
     /* Mobile sidebar close on outside click */
     document.addEventListener('click', (e) => {
       if (window.innerWidth < 768 &&
@@ -279,6 +292,17 @@
 
     const mediaPanel = $('.media-panel');
     const welcomeScreen = $('.welcome-screen');
+    const knowledgePanel = $('.knowledge-panel');
+
+    if (mode === 'knowledge') {
+      mediaPanel?.classList.remove('active');
+      showKnowledgeBrowser();
+      updatePlaceholder(mode);
+      return;
+    }
+
+    /* Close knowledge panel when switching away */
+    knowledgePanel?.classList.remove('open');
 
     if (mode === 'image' || mode === 'video') {
       if (messages.length === 0) {
@@ -301,7 +325,8 @@
       chat:  'Ask me anything…',
       code:  'Describe the code you need (language, task, requirements)…',
       image: 'Describe an image to generate (style, colours, subject)…',
-      video: 'Describe a video or upload images to animate…'
+      video: 'Describe a video or upload images to animate…',
+      knowledge: 'Search your AI\'s learned knowledge…'
     };
     chatInput.placeholder = placeholders[mode] || placeholders.chat;
   }
@@ -1210,7 +1235,8 @@
   async function updateMemoryStats() {
     if (!memoryBadge) return;
     const stats = await AielLearning.getStats();
-    memoryBadge.textContent = `🧠 ${stats.patterns} patterns`;
+    const total = (stats.patterns || 0) + (stats.knowledge || 0);
+    memoryBadge.textContent = `🧠 ${total} items`;
   }
 
   /* ── Preferences ────────────────────────────────────────────────────────── */
@@ -1327,6 +1353,107 @@
       link.download = 'aiel-media.png';
       link.href = canvas.toDataURL();
       link.click();
+    }
+  }
+
+  /* ── Self-training init ──────────────────────────────────────────────────── */
+
+  async function initSelfTraining() {
+    if (typeof AielSelfTrainer !== 'undefined') {
+      try {
+        await AielSelfTrainer.init();
+      } catch (_) { /* self-training is optional */ }
+    }
+  }
+
+  /* ── Knowledge mode ────────────────────────────────────────────────────── */
+
+  async function showKnowledgeBrowser() {
+    const knowledgePanel = $('.knowledge-panel');
+    if (!knowledgePanel) return;
+    knowledgePanel.classList.add('open');
+    await refreshKnowledgeContent();
+  }
+
+  async function refreshKnowledgeContent(query) {
+    const content = $('#knowledge-content');
+    if (!content) return;
+
+    content.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-faint)">Loading…</div>';
+
+    try {
+      let items;
+      if (query && query.trim()) {
+        items = await AielLearning.searchKnowledge(query, 30);
+      } else {
+        const stats = await AielLearning.getStats();
+        const patterns = stats.patterns || 0;
+        const knowledge = stats.knowledge || 0;
+
+        let html = `<div style="padding:1rem">`;
+        html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem">`;
+        html += `<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+          <div style="font-size:1.5rem;font-weight:700;color:var(--primary)">${patterns}</div>
+          <div style="font-size:.75rem;color:var(--text-muted)">Patterns</div>
+        </div>`;
+        html += `<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;text-align:center">
+          <div style="font-size:1.5rem;font-weight:700;color:var(--accent)">${knowledge}</div>
+          <div style="font-size:.75rem;color:var(--text-muted)">Knowledge Items</div>
+        </div>`;
+        html += `</div>`;
+
+        /* Show recent patterns */
+        if (typeof AielKnowledgeIngestor !== 'undefined') {
+          const trainingStats = await AielKnowledgeIngestor.getStats();
+          html += `<div style="font-size:.82rem;color:var(--text-muted);margin-bottom:.5rem">
+            <strong>Training Stats:</strong> ${trainingStats.total || 0} total items | 
+            Text: ${trainingStats.text || 0} | Q&A: ${trainingStats.qa || 0} | 
+            Code: ${trainingStats.code || 0} | AI: ${trainingStats.aiGenerated || 0}
+          </div>`;
+        }
+
+        html += `<p style="font-size:.85rem;color:var(--text-muted);margin-top:.5rem">
+          Use the search box above to explore what Aiel has learned, or enable self-training in Settings to grow the knowledge base automatically.
+        </p>`;
+        html += `</div>`;
+        content.innerHTML = html;
+        return;
+      }
+
+      if (!items || items.length === 0) {
+        content.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-faint)">No results found.</div>';
+        return;
+      }
+
+      let html = '';
+      items.forEach((item) => {
+        const text = typeof item.content === 'object'
+          ? (item.content.summary || item.content.definition || item.content.fact || JSON.stringify(item.content).slice(0, 150))
+          : String(item.content).slice(0, 150);
+        const category = item.category || item.type || 'general';
+        html += `<div class="knowledge-item" data-id="${item.id || ''}">
+          <div class="knowledge-item-header">
+            <span class="knowledge-item-category">${category}</span>
+            ${item.id ? `<button class="knowledge-item-delete" data-id="${item.id}" title="Delete">🗑️</button>` : ''}
+          </div>
+          <div class="knowledge-item-text">${escapeHtml(text)}</div>
+          <div class="knowledge-item-meta">${item.timestamp ? new Date(item.timestamp).toLocaleDateString() : ''}</div>
+        </div>`;
+      });
+      content.innerHTML = html;
+
+      /* Bind delete buttons */
+      content.querySelectorAll('.knowledge-item-delete').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = Number(btn.dataset.id);
+          if (id) {
+            await AielLearning.deleteKnowledge(id);
+            await refreshKnowledgeContent(query);
+          }
+        });
+      });
+    } catch (_) {
+      content.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-faint)">Error loading knowledge.</div>';
     }
   }
 

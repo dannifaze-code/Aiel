@@ -1388,6 +1388,130 @@ footer a { color: var(--text-muted); }
   cursor: pointer;
 }
 
+/* ── Training status indicator ────────────────────────────────────────────── */
+
+.training-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .75rem;
+  color: var(--text-faint);
+  margin-left: .5rem;
+  padding: .15rem .5rem;
+  border-radius: 10px;
+  background: var(--surface3);
+  transition: all var(--t);
+}
+.training-status-indicator.active {
+  color: var(--accent);
+  background: rgba(0,212,170,.1);
+}
+.training-status-indicator.active .training-icon {
+  animation: trainingPulse 2s ease-in-out infinite;
+}
+
+@keyframes trainingPulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: .4; }
+}
+
+/* ── Knowledge browser panel ─────────────────────────────────────────────── */
+
+.knowledge-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 380px;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--t);
+  box-shadow: -4px 0 32px rgba(0,0,0,.3);
+}
+.knowledge-panel.open { transform: translateX(0); }
+
+.knowledge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.knowledge-header h3 { font-size: 1rem; font-weight: 700; }
+
+.knowledge-search {
+  padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.knowledge-search input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .5rem .75rem;
+  color: var(--text);
+  font-size: .85rem;
+  outline: none;
+}
+.knowledge-search input:focus { border-color: var(--primary); }
+
+.knowledge-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: .5rem;
+}
+
+.knowledge-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .75rem;
+  margin-bottom: .5rem;
+  transition: border-color var(--t-fast);
+}
+.knowledge-item:hover { border-color: var(--primary); }
+
+.knowledge-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .35rem;
+}
+
+.knowledge-item-category {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.knowledge-item-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: .8rem;
+  opacity: .5;
+  transition: opacity var(--t-fast);
+}
+.knowledge-item-delete:hover { opacity: 1; }
+
+.knowledge-item-text {
+  font-size: .82rem;
+  color: var(--text);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.knowledge-item-meta {
+  font-size: .7rem;
+  color: var(--text-faint);
+  margin-top: .3rem;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -1439,6 +1563,11 @@ footer a { color: var(--text-muted); }
   .mode-btn span { display: none; }
 
   .hero-stats { gap: 2rem; }
+
+  .knowledge-panel { width: 100%; }
+  .settings-panel { width: 100%; }
+
+  .training-status-indicator .training-status-text { display: none; }
 }
 
 @media (max-width: 480px) {

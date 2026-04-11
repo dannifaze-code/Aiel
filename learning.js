@@ -4,13 +4,15 @@
  */
 const AielLearning = (() => {
   const DB_NAME = 'AielMemory';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const STORES = {
     PATTERNS: 'patterns',
     CONVERSATIONS: 'conversations',
     PREFERENCES: 'preferences',
     CODE_SNIPPETS: 'code_snippets',
-    MEDIA: 'media_history'
+    MEDIA: 'media_history',
+    KNOWLEDGE: 'knowledge',
+    DEDUP_HASHES: 'dedup_hashes'
   };
 
   let db = null;
@@ -50,6 +52,17 @@ const AielLearning = (() => {
           database.createObjectStore(STORES.MEDIA, {
             keyPath: 'id', autoIncrement: true
           });
+        }
+        if (!database.objectStoreNames.contains(STORES.KNOWLEDGE)) {
+          const knowledgeStore = database.createObjectStore(STORES.KNOWLEDGE, {
+            keyPath: 'id', autoIncrement: true
+          });
+          knowledgeStore.createIndex('category', 'category', { unique: false });
+          knowledgeStore.createIndex('timestamp', 'timestamp', { unique: false });
+          knowledgeStore.createIndex('hash', 'hash', { unique: false });
+        }
+        if (!database.objectStoreNames.contains(STORES.DEDUP_HASHES)) {
+          database.createObjectStore(STORES.DEDUP_HASHES, { keyPath: 'hash' });
         }
       };
 
@@ -263,6 +276,65 @@ const AielLearning = (() => {
     });
   }
 
+  /* ── Knowledge store ────────────────────────────────────────────────────── */
+
+  function saveKnowledge(item) {
+    return withStore(STORES.KNOWLEDGE, 'readwrite', (store) =>
+      store.add({
+        ...item,
+        timestamp: Date.now()
+      })
+    );
+  }
+
+  function getKnowledge(category, limit = 50) {
+    return openDB().then((database) => {
+      return new Promise((resolve) => {
+        const tx = database.transaction(STORES.KNOWLEDGE, 'readonly');
+        const store = tx.objectStore(STORES.KNOWLEDGE);
+        if (category) {
+          const index = store.index('category');
+          const req = index.getAll(category);
+          req.onsuccess = (e) => resolve(e.target.result.slice(0, limit));
+          req.onerror = () => resolve([]);
+        } else {
+          const req = store.getAll();
+          req.onsuccess = (e) => resolve(e.target.result.slice(-limit));
+          req.onerror = () => resolve([]);
+        }
+      });
+    });
+  }
+
+  function searchKnowledge(query, limit = 20) {
+    return openDB().then((database) => {
+      return new Promise((resolve) => {
+        const tx = database.transaction(STORES.KNOWLEDGE, 'readonly');
+        const store = tx.objectStore(STORES.KNOWLEDGE);
+        const req = store.getAll();
+        req.onsuccess = (e) => {
+          const results = e.target.result;
+          const queryLower = query.toLowerCase();
+          const queryWords = queryLower.split(/\s+/).filter(Boolean);
+          const filtered = results.filter((item) => {
+            const text = JSON.stringify(item).toLowerCase();
+            return queryWords.some((w) => text.includes(w));
+          }).slice(0, limit);
+          resolve(filtered);
+        };
+        req.onerror = () => resolve([]);
+      });
+    });
+  }
+
+  function deleteKnowledge(id) {
+    return withStore(STORES.KNOWLEDGE, 'readwrite', (store) => store.delete(id));
+  }
+
+  function clearKnowledge() {
+    return withStore(STORES.KNOWLEDGE, 'readwrite', (store) => store.clear());
+  }
+
   /* ── Stats ─────────────────────────────────────────────────────────────── */
 
   function getStats() {
@@ -273,11 +345,24 @@ const AielLearning = (() => {
         const convTx = database.transaction(STORES.CONVERSATIONS, 'readonly');
         const convCount = convTx.objectStore(STORES.CONVERSATIONS).count();
 
-        Promise.all([
+        const promises = [
           new Promise((r) => { patternCount.onsuccess = (e) => r(e.target.result); patternCount.onerror = () => r(0); }),
           new Promise((r) => { convCount.onsuccess = (e) => r(e.target.result); convCount.onerror = () => r(0); })
-        ]).then(([patterns, conversations]) => {
-          resolve({ patterns, conversations });
+        ];
+
+        /* Count knowledge items if the store exists */
+        if (database.objectStoreNames.contains(STORES.KNOWLEDGE)) {
+          const knowledgeTx = database.transaction(STORES.KNOWLEDGE, 'readonly');
+          const knowledgeCount = knowledgeTx.objectStore(STORES.KNOWLEDGE).count();
+          promises.push(
+            new Promise((r) => { knowledgeCount.onsuccess = (e) => r(e.target.result); knowledgeCount.onerror = () => r(0); })
+          );
+        } else {
+          promises.push(Promise.resolve(0));
+        }
+
+        Promise.all(promises).then(([patterns, conversations, knowledge]) => {
+          resolve({ patterns, conversations, knowledge });
         });
       });
     });
@@ -325,6 +410,11 @@ const AielLearning = (() => {
     getPreference,
     saveCodeSnippet,
     getCodeSnippets,
+    saveKnowledge,
+    getKnowledge,
+    searchKnowledge,
+    deleteKnowledge,
+    clearKnowledge,
     getStats,
     extractKeywords
   };

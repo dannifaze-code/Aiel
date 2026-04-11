@@ -157,10 +157,18 @@ const AielEngine = (() => {
       return;
     }
 
+    /* Check ingested knowledge before hardcoded responses */
+    const knowledgeResult = await knowledgeLookup(input, keywords);
+    if (knowledgeResult) {
+      response = `🧠 From my knowledge base: ${knowledgeResult}`;
+      yield* streamText(response);
+      return;
+    }
+
     /* Mode-specific handlers */
     switch (mode) {
       case 'code':
-        response = handleCodeMode(input, history);
+        response = await handleCodeMode(input, history);
         break;
       case 'image':
         response = '__IMAGE_GEN__';
@@ -173,6 +181,47 @@ const AielEngine = (() => {
     }
 
     yield* streamText(response);
+  }
+
+  /* ── Knowledge lookup ──────────────────────────────────────────────────── */
+
+  /**
+   * Search across ingested knowledge (patterns + knowledge store) for relevant info.
+   * Returns a response string if found, or null if nothing relevant.
+   */
+  async function knowledgeLookup(input, keywords) {
+    try {
+      /* Search knowledge store using keywords */
+      if (typeof AielLearning.searchKnowledge === 'function') {
+        const results = await AielLearning.searchKnowledge(input, 3);
+        if (results.length > 0) {
+          const best = results[0];
+          const content = best.content || best;
+          if (typeof content === 'object') {
+            if (content.summary) return content.summary;
+            if (content.definition) return `**${content.word || ''}**: ${content.definition}`;
+            if (content.fact) return content.fact;
+          }
+          if (typeof content === 'string') return content;
+        }
+      }
+
+      /* Also check code snippets if the query seems code-related */
+      if (/\b(code|program|function|class|example|write|implement|build)\b/i.test(input)) {
+        const snippets = await AielLearning.getCodeSnippets(null, 5);
+        if (snippets.length > 0) {
+          const inputLower = input.toLowerCase();
+          const match = snippets.find((s) =>
+            s.prompt && inputLower.includes(s.language?.toLowerCase()) ||
+            (s.prompt && inputLower.split(/\s+/).some((w) => s.prompt.toLowerCase().includes(w)))
+          );
+          if (match) {
+            return `Here's a ${match.language || ''} snippet I've learned:\n\n${match.code}`;
+          }
+        }
+      }
+    } catch (_) { /* knowledge lookup is optional */ }
+    return null;
   }
 
   /* ── Local chat engine ──────────────────────────────────────────────────── */
@@ -302,10 +351,28 @@ Want to go deeper on any of these? Or switch to Code mode to see ML algorithms i
     return generateGeneralResponse(input, history);
   }
 
-  function handleCodeMode(input, history) {
+  async function handleCodeMode(input, history) {
     const lower = input.toLowerCase();
     const lang = detectLanguage(input);
     const task = detectTask(input);
+
+    /* Check if we have a learned code snippet for this request */
+    try {
+      const snippets = await AielLearning.getCodeSnippets(lang, 10);
+      if (snippets.length > 0) {
+        const inputWords = lower.split(/\s+/);
+        const match = snippets.find((s) =>
+          s.prompt && inputWords.some((w) => w.length > 3 && s.prompt.toLowerCase().includes(w))
+        );
+        if (match && match.code) {
+          return `\`\`\`${lang}\n${match.code}\n\`\`\`
+
+**Explanation:** This code was retrieved from my learned knowledge base. It addresses your request for "${input.slice(0, 60)}…".
+
+*🧠 This snippet was learned during self-training. Copy it, run it, and let me know if you need modifications!*`;
+        }
+      }
+    } catch (_) { /* fall through to static templates */ }
 
     return `\`\`\`${lang}\n${generateCode(input, lang, task, history)}\n\`\`\`
 
