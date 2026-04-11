@@ -564,7 +564,7 @@
             Loading…
           </div>
           <button class="btn-secondary" id="clear-memory-btn" style="width:100%;justify-content:center;padding:.6rem;color:#ff4444;border-color:#ff4444">
-            🗑️ Clear Learned Patterns
+            🗑️ Clear Learned Patterns &amp; Knowledge
           </button>
         </div>
       </div>
@@ -661,16 +661,20 @@
   }
 
   async function clearMemory() {
-    /* Re-open DB and clear patterns store */
+    /* Clear patterns store */
     const request = indexedDB.open('AielMemory', 2);
     request.onsuccess = (e) => {
       const db = e.target.result;
-      const tx = db.transaction('patterns', 'readwrite');
-      tx.objectStore('patterns').clear();
+      const storeNames = [];
+      if (db.objectStoreNames.contains('patterns')) storeNames.push('patterns');
+      if (db.objectStoreNames.contains('knowledge')) storeNames.push('knowledge');
+      if (storeNames.length === 0) return;
+      const tx = db.transaction(storeNames, 'readwrite');
+      storeNames.forEach((name) => tx.objectStore(name).clear());
       tx.oncomplete = () => {
         document.querySelector('.memory-badge').textContent = '🧠 0 patterns';
         const display = document.getElementById('stats-display');
-        if (display) display.textContent = '✅ Patterns cleared.';
+        if (display) display.textContent = '✅ Patterns and knowledge cleared.';
       };
     };
   }
@@ -679,7 +683,7 @@
   document.getElementById('view-stats-btn')?.addEventListener('click', updateStatsDisplay);
 
   document.getElementById('clear-memory-btn')?.addEventListener('click', () => {
-    if (confirm('Clear all learned patterns? This cannot be undone.')) clearMemory();
+    if (confirm('Clear all learned patterns and knowledge? This will remove any poisoned data. This cannot be undone.')) clearMemory();
   });
 
   /* ── Self-Training Dashboard Bindings ─────────────────────────────── */

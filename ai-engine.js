@@ -50,23 +50,14 @@ const AielEngine = (() => {
       }
     } catch (_) { /* not available */ }
 
-    /* 2. Try Transformers.js */
-    try {
-      onProgress?.('Loading AI model (first run may take a moment)…');
-      const { pipeline, env } = await import(`${TRANSFORMERS_CDN}/dist/transformers.min.js`);
-      env.allowLocalModels = false;
-      env.useBrowserCache = true;
-
-      transformersPipeline = await pipeline(
-        'text-generation',
-        'Xenova/distilgpt2',
-        { progress_callback: (info) => onProgress?.(`Loading model: ${Math.round((info.progress || 0))}%`) }
-      );
-      activeBackend = 'transformers';
-      ready = true;
-      isInitialising = false;
-      return activeBackend;
-    } catch (_) { /* not available or offline */ }
+    /* 2. Transformers.js — DISABLED
+     *    DistilGPT2 is a text-completion model, not an instruction-following
+     *    model.  It produces garbage (URLs, JSON, HTML fragments) when given
+     *    conversational prompts and those outputs get permanently stored as
+     *    "learned patterns", poisoning future responses.  Skip straight to
+     *    the local engine which has proper hardcoded responses and learns
+     *    safely over time.  Re-enable this block once a chat-capable model
+     *    (e.g. TinyLlama-Chat) is integrated. */
 
     /* 3. Fall back to local engine */
     onProgress?.('Using Aiel Local Engine (offline mode)');
@@ -150,6 +141,18 @@ const AielEngine = (() => {
 
     let response = '';
 
+    /* For chat mode, check hardcoded responses FIRST so that core
+     * conversational handlers (greetings, identity, etc.) cannot be
+     * overridden by potentially poisoned learned patterns. */
+    if (mode === 'chat' || mode === undefined) {
+      const hardcoded = handleChatMode(input, history);
+      if (hardcoded !== null) {
+        response = hardcoded;
+        yield* streamText(response);
+        return;
+      }
+    }
+
     /* Use learned pattern if confidence is high enough */
     if (learned && learned.score > 0.7) {
       response = `💡 Based on what I've learned: ${learned.response}`;
@@ -159,7 +162,7 @@ const AielEngine = (() => {
       return;
     }
 
-    /* Check ingested knowledge before hardcoded responses */
+    /* Check ingested knowledge before generic fallback */
     const knowledgeResult = await knowledgeLookup(input, keywords);
     if (knowledgeResult) {
       response = `🧠 From my knowledge base: ${knowledgeResult}`;
@@ -169,7 +172,7 @@ const AielEngine = (() => {
       return;
     }
 
-    /* Mode-specific handlers */
+    /* Mode-specific handlers (code / image / video) */
     switch (mode) {
       case 'code':
         response = await handleCodeMode(input, history);
@@ -181,7 +184,8 @@ const AielEngine = (() => {
         response = '__VIDEO_GEN__';
         break;
       default:
-        response = handleChatMode(input, history);
+        /* Fallback — generateGeneralResponse for topics not matched above */
+        response = generateGeneralResponse(input, history);
     }
 
     yield* streamText(response);
@@ -201,12 +205,15 @@ const AielEngine = (() => {
         if (results.length > 0) {
           const best = results[0];
           const content = best.content || best;
+          let candidate = null;
           if (typeof content === 'object') {
-            if (content.summary) return content.summary;
-            if (content.definition) return `**${content.word || ''}**: ${content.definition}`;
-            if (content.fact) return content.fact;
+            if (content.summary) candidate = content.summary;
+            else if (content.definition) candidate = `**${content.word || ''}**: ${content.definition}`;
+            else if (content.fact) candidate = content.fact;
           }
-          if (typeof content === 'string') return content;
+          if (!candidate && typeof content === 'string') candidate = content;
+          /* Only return if the candidate is human-readable text */
+          if (candidate && AielLearning.isValidResponse(candidate)) return candidate;
         }
       }
 
@@ -351,8 +358,10 @@ I myself use a combination of rule-based reasoning and learned patterns. Every t
 Want to go deeper on any of these? Or switch to Code mode to see ML algorithms in action!`;
     }
 
-    /* Default: thoughtful general response */
-    return generateGeneralResponse(input, history);
+    /* No specific pattern matched — return null so localChat can try
+     * learned patterns and knowledge lookup before falling back to the
+     * generic response generator. */
+    return null;
   }
 
   async function handleCodeMode(input, history) {
