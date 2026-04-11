@@ -17,16 +17,18 @@ const AielGraph = (() => {
   let isVisible = false;
   let animFrameId = null;
 
-  /* Learning data points — rolling window */
+  /* Learning data points — rolling window. Each entry has a timestamp and
+   * a counts object keyed by source name (e.g. 'wikipedia', 'hackernews',
+   * 'burst', or any dynamically-added source). */
   const MAX_POINTS = 60;
-  const dataPoints = [];          /* { timestamp, counts: { wikipedia, trivia, code, user, url, hackernews, devto, stackoverflow, burst } } */
+  const dataPoints = [];
   const BUCKET_MS = 30000;        /* 30-second buckets */
 
   /* Activity feed */
   const activityFeed = [];
   const MAX_FEED = 25;
 
-  /* Source colors */
+  /* Source colors (hex) — converted to RGBA for area fills via hexToRgba helper */
   const SOURCE_COLORS = {
     wikipedia:     '#4a9eff',
     trivia:        '#00d4aa',
@@ -277,7 +279,7 @@ const AielGraph = (() => {
         ctx.lineTo(padding.left + chartW, padding.top + chartH);
         ctx.lineTo(padding.left, padding.top + chartH);
         ctx.closePath();
-        ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb', 'rgba');
+        ctx.fillStyle = hexToRgba(color, 0.08);
         ctx.fill();
       }
     });
@@ -419,6 +421,24 @@ const AielGraph = (() => {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+  }
+
+  /**
+   * Convert a hex color to an RGBA string with the given alpha.
+   * Handles both #RGB and #RRGGBB formats, and passes through rgb()/rgba() strings.
+   */
+  function hexToRgba(color, alpha) {
+    if (color.startsWith('rgba')) return color;
+    if (color.startsWith('rgb(')) {
+      return color.replace('rgb(', 'rgba(').replace(')', `,${alpha})`);
+    }
+    /* Hex color */
+    let hex = color.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
   }
 
   /* ── Public API ─────────────────────────────────────────────────────────── */

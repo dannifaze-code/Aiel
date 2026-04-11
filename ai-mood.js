@@ -101,7 +101,7 @@ const AielMood = (() => {
     const signal = { type, weight, timestamp: Date.now(), meta: meta || null };
     recentSignals.push(signal);
     if (recentSignals.length > MAX_SIGNALS) {
-      recentSignals = recentSignals.slice(-MAX_SIGNALS);
+      recentSignals.splice(0, recentSignals.length - MAX_SIGNALS);
     }
 
     /* Update mood score with smoothing */

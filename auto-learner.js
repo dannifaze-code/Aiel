@@ -13,6 +13,12 @@ const AielAutoLearner = (() => {
   let sessionFetches = 0;
   const MAX_SESSION_FETCHES = 40;
 
+  const FETCH_TIMEOUT_MS = 12000;
+  const REMOVE_SELECTORS = 'script,style,nav,footer,header,aside,iframe,noscript,.ad,.ads,.advertisement,.sidebar,.menu,.nav,[role="navigation"],[role="banner"]';
+
+  /* Module-level stop words for keyword extraction */
+  const STOP_WORDS = new Set(['a','an','the','is','are','was','were','to','of','in','for','on','with','at','by','from','and','or','but','it','this','that']);
+
   async function rateLimitedFetch(url, category) {
     if (sessionFetches >= MAX_SESSION_FETCHES) {
       throw new Error('Session fetch limit reached');
@@ -25,7 +31,7 @@ const AielAutoLearner = (() => {
     sessionFetches++;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
       const resp = await fetch(url, { signal: controller.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -231,6 +237,9 @@ const AielAutoLearner = (() => {
           const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
           const proxyResp = await rateLimitedFetch(proxyUrl, 'cors-proxy');
           const proxyData = await proxyResp.json();
+          if (!proxyData || typeof proxyData.contents !== 'string') {
+            return { success: false, count: 0, error: 'CORS proxy returned invalid data' };
+          }
           html = proxyData.contents;
         } catch (proxyErr) {
           return { success: false, count: 0, error: 'Cannot access URL (CORS blocked)' };
@@ -266,8 +275,7 @@ const AielAutoLearner = (() => {
     const doc = parser.parseFromString(html, 'text/html');
 
     /* Remove scripts, styles, nav, footer, ads */
-    const removeSelectors = 'script,style,nav,footer,header,aside,iframe,noscript,.ad,.ads,.advertisement,.sidebar,.menu,.nav';
-    doc.querySelectorAll(removeSelectors).forEach(el => el.remove());
+    doc.querySelectorAll(REMOVE_SELECTORS).forEach(el => el.remove());
 
     /* Extract title */
     const title = doc.querySelector('title')?.textContent?.trim()
@@ -398,9 +406,8 @@ const AielAutoLearner = (() => {
     if (typeof AielDataFetcher !== 'undefined' && AielDataFetcher.extractKeywordsFromText) {
       return AielDataFetcher.extractKeywordsFromText(text);
     }
-    const stopWords = new Set(['a','an','the','is','are','was','were','to','of','in','for','on','with','at','by','from','and','or','but','it','this','that']);
     return text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/)
-      .filter(w => w.length > 2 && !stopWords.has(w))
+      .filter(w => w.length > 2 && !STOP_WORDS.has(w))
       .filter((w, i, arr) => arr.indexOf(w) === i)
       .slice(0, 10);
   }
