@@ -295,6 +295,9 @@
         <button class="mode-btn" data-mode="video" role="tab" aria-selected="false" title="Video mode">
           🎬 <span>Video</span>
         </button>
+        <button class="mode-btn" data-mode="knowledge" role="tab" aria-selected="false" title="Knowledge mode">
+          📚 <span>Knowledge</span>
+        </button>
       </div>
     </div>
 
@@ -311,6 +314,10 @@
   <div class="ai-status-bar" role="status" aria-live="polite">
     <div class="ai-status-dot" aria-hidden="true"></div>
     <span class="ai-status-text">Initialising…</span>
+    <div class="training-status-indicator" title="Self-training status" aria-live="polite">
+      <span class="training-icon">📡</span>
+      <span class="training-status-text">Training off</span>
+    </div>
     <div class="learning-indicator" aria-live="polite" aria-label="Learning new pattern">
       <span class="brain">🧠</span>
       <span>Learning…</span>
@@ -435,6 +442,59 @@
       </div>
 
       <div class="settings-section">
+        <h4>Self-Training</h4>
+        <div class="settings-row">
+          <span class="settings-label">Auto-Train</span>
+          <button class="toggle" id="training-toggle" aria-label="Toggle self-training" role="switch" aria-checked="false"></button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem">
+          <button class="btn-primary" id="train-now-btn" style="width:100%;justify-content:center;padding:.6rem;font-size:.85rem">
+            ⚡ Train Now
+          </button>
+          <div id="training-dashboard" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;font-size:.82rem">
+            <div style="margin-bottom:.6rem;font-weight:600">📊 Training Stats</div>
+            <div id="training-stats-content">Loading…</div>
+            <div style="margin-top:.6rem;font-weight:600">📝 Activity Log</div>
+            <div id="training-activity-log" style="max-height:120px;overflow-y:auto;font-size:.78rem;color:var(--text-muted);margin-top:.3rem">
+              No activity yet.
+            </div>
+          </div>
+          <button class="btn-secondary" id="view-training-stats-btn" style="width:100%;justify-content:center;padding:.5rem;font-size:.82rem">
+            📊 View Training Stats
+          </button>
+          <div style="margin-top:.3rem">
+            <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem;font-weight:600">Categories to Learn:</div>
+            <div style="display:flex;flex-direction:column;gap:.3rem" id="training-categories">
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="words" checked /> 📖 Words &amp; Definitions
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="articles" checked /> 📰 Articles (Wikipedia)
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="trivia" checked /> ❓ Trivia &amp; Q&amp;A
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="facts" checked /> 🔢 Math &amp; Number Facts
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="books" checked /> 📚 Books &amp; Literature
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="images" checked /> 🖼️ Image Metadata
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer">
+                <input type="checkbox" class="training-cat-toggle" data-cat="aiLearning" checked /> 🤖 AI-to-AI Learning
+              </label>
+            </div>
+          </div>
+          <button class="btn-secondary" id="clear-training-btn" style="width:100%;justify-content:center;padding:.5rem;font-size:.82rem;color:#ff4444;border-color:#ff4444;margin-top:.3rem">
+            🗑️ Clear Training Data
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
         <h4>Memory</h4>
         <div style="display:flex;flex-direction:column;gap:.5rem">
           <button class="btn-secondary" id="view-stats-btn" style="width:100%;justify-content:center;padding:.6rem">
@@ -484,6 +544,22 @@
     </div>
   </aside>
 
+  <!-- Knowledge Browser Panel -->
+  <aside class="knowledge-panel" aria-label="Knowledge Browser" role="dialog">
+    <div class="knowledge-header">
+      <h3>📚 Knowledge Browser</h3>
+      <button class="icon-btn" id="knowledge-close" aria-label="Close knowledge browser">✕</button>
+    </div>
+    <div class="knowledge-search">
+      <input type="search" id="knowledge-search-input" placeholder="Search learned knowledge…" aria-label="Search knowledge" />
+    </div>
+    <div class="knowledge-body" id="knowledge-content">
+      <div style="text-align:center;color:var(--text-faint);padding:2rem;font-size:.9rem">
+        Switch to Knowledge mode and search your AI's learned knowledge here.
+      </div>
+    </div>
+  </aside>
+
 </div><!-- /#app-view -->
 
 <!-- Toast notifications -->
@@ -491,6 +567,10 @@
 
 <!-- Scripts -->
 <script src="learning.js"></script>
+<script src="data-fetcher.js"></script>
+<script src="knowledge-ingestor.js"></script>
+<script src="ai-learning-bridge.js"></script>
+<script src="self-training.js"></script>
 <script src="ai-engine.js"></script>
 <script src="app.js"></script>
 
@@ -507,6 +587,7 @@
       display.innerHTML = `
         <div>🧠 <strong>${stats.patterns}</strong> learned patterns</div>
         <div>💬 <strong>${stats.conversations}</strong> saved conversations</div>
+        <div>📚 <strong>${stats.knowledge || 0}</strong> knowledge items</div>
         <div>💾 Storage: IndexedDB (local only)</div>
       `;
     }
@@ -518,7 +599,7 @@
 
   async function clearMemory() {
     /* Re-open DB and clear patterns store */
-    const request = indexedDB.open('AielMemory', 1);
+    const request = indexedDB.open('AielMemory', 2);
     request.onsuccess = (e) => {
       const db = e.target.result;
       const tx = db.transaction('patterns', 'readwrite');
@@ -536,6 +617,147 @@
 
   document.getElementById('clear-memory-btn')?.addEventListener('click', () => {
     if (confirm('Clear all learned patterns? This cannot be undone.')) clearMemory();
+  });
+
+  /* ── Self-Training Dashboard Bindings ─────────────────────────────── */
+
+  /* Training toggle */
+  document.getElementById('training-toggle')?.addEventListener('click', async function() {
+    const isOn = this.classList.toggle('on');
+    this.setAttribute('aria-checked', isOn.toString());
+    if (window.AielSelfTrainer) {
+      await AielSelfTrainer.updateConfig({ enabled: isOn });
+      updateTrainingStatusIndicator();
+    }
+  });
+
+  /* Train Now button */
+  document.getElementById('train-now-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('train-now-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Training…';
+    try {
+      if (window.AielSelfTrainer) {
+        const count = await AielSelfTrainer.trainNow();
+        btn.textContent = `✅ Learned ${count} items!`;
+        setTimeout(() => { btn.textContent = '⚡ Train Now'; btn.disabled = false; }, 2000);
+        updateTrainingDashboard();
+      }
+    } catch (e) {
+      btn.textContent = '❌ Training failed';
+      setTimeout(() => { btn.textContent = '⚡ Train Now'; btn.disabled = false; }, 2000);
+    }
+  });
+
+  /* View training stats */
+  document.getElementById('view-training-stats-btn')?.addEventListener('click', () => {
+    const dashboard = document.getElementById('training-dashboard');
+    if (dashboard) {
+      dashboard.style.display = dashboard.style.display === 'none' ? 'block' : 'none';
+      if (dashboard.style.display !== 'none') updateTrainingDashboard();
+    }
+  });
+
+  /* Category toggles */
+  document.querySelectorAll('.training-cat-toggle').forEach((cb) => {
+    cb.addEventListener('change', async () => {
+      if (window.AielSelfTrainer) {
+        const categories = {};
+        document.querySelectorAll('.training-cat-toggle').forEach((el) => {
+          categories[el.dataset.cat] = el.checked;
+        });
+        await AielSelfTrainer.updateConfig({ categories });
+      }
+    });
+  });
+
+  /* Clear training data */
+  document.getElementById('clear-training-btn')?.addEventListener('click', async () => {
+    if (!confirm('Clear all training data? This cannot be undone.')) return;
+    if (window.AielLearning) {
+      await AielLearning.clearKnowledge();
+      await AielLearning.setPreference('trainingStats', {
+        total: 0, text: 0, qa: 0, code: 0, image: 0, aiGenerated: 0,
+        lastRun: null, sessions: 0
+      });
+      await AielLearning.setPreference('ingestedHashes', []);
+      await AielLearning.setPreference('learnedTopics', []);
+      await AielLearning.setPreference('trainingActivityLog', []);
+      updateTrainingDashboard();
+    }
+  });
+
+  async function updateTrainingDashboard() {
+    if (!window.AielSelfTrainer) return;
+    const status = await AielSelfTrainer.getTrainingStatus();
+    const statsEl = document.getElementById('training-stats-content');
+    if (statsEl) {
+      const s = status.stats;
+      statsEl.innerHTML = `
+        <div>📊 Total items learned: <strong>${s.total || 0}</strong></div>
+        <div>📖 Text/Articles: ${s.text || 0} | ❓ Q&A: ${s.qa || 0}</div>
+        <div>💻 Code: ${s.code || 0} | 🖼️ Images: ${s.image || 0}</div>
+        <div>🤖 AI-generated: ${s.aiGenerated || 0}</div>
+        <div>🎯 Topics mastered: ${status.topicsLearned || 0}</div>
+        <div>📅 Last run: ${s.lastRun ? new Date(s.lastRun).toLocaleString() : 'Never'}</div>
+      `;
+    }
+    const logEl = document.getElementById('training-activity-log');
+    if (logEl) {
+      const log = status.activityLog || [];
+      if (log.length === 0) {
+        logEl.textContent = 'No activity yet.';
+      } else {
+        logEl.innerHTML = log.slice(-15).reverse().map((entry) =>
+          `<div style="padding:.15rem 0;border-bottom:1px solid var(--border)">${entry.message} <span style="float:right;font-size:.7rem">${new Date(entry.timestamp).toLocaleTimeString()}</span></div>`
+        ).join('');
+      }
+    }
+  }
+
+  function updateTrainingStatusIndicator() {
+    const indicator = document.querySelector('.training-status-indicator');
+    const icon = indicator?.querySelector('.training-icon');
+    const text = indicator?.querySelector('.training-status-text');
+    if (!indicator || !window.AielSelfTrainer) return;
+    if (AielSelfTrainer.isActive) {
+      indicator.classList.add('active');
+      if (icon) icon.textContent = '📡';
+      if (text) text.textContent = 'Training active';
+    } else {
+      indicator.classList.remove('active');
+      if (icon) icon.textContent = '📡';
+      if (text) text.textContent = 'Training off';
+    }
+  }
+
+  /* Listen for training updates */
+  window.addEventListener('aiel-training-update', () => {
+    updateTrainingDashboard();
+    updateTrainingStatusIndicator();
+  });
+
+  /* Restore training toggle state on load */
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (window.AielLearning) {
+      try {
+        await AielLearning.init();
+        const savedConfig = await AielLearning.getPreference('selfTrainingConfig', null);
+        if (savedConfig && savedConfig.enabled) {
+          const toggle = document.getElementById('training-toggle');
+          if (toggle) { toggle.classList.add('on'); toggle.setAttribute('aria-checked', 'true'); }
+        }
+        /* Restore category checkboxes */
+        if (savedConfig && savedConfig.categories) {
+          document.querySelectorAll('.training-cat-toggle').forEach((cb) => {
+            if (typeof savedConfig.categories[cb.dataset.cat] !== 'undefined') {
+              cb.checked = savedConfig.categories[cb.dataset.cat];
+            }
+          });
+        }
+      } catch (_) { /* first run */ }
+    }
+    updateTrainingStatusIndicator();
   });
 
   /* Ctrl+B sidebar toggle */
