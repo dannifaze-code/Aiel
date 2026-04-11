@@ -1669,7 +1669,7 @@
       /* Run staleness decay and batch recompute once per session */
       setTimeout(async () => {
         try {
-          await AielConfidenceEngine.applyStalenessDec();
+          await AielConfidenceEngine.applyDecay();
           await AielConfidenceEngine.recomputeAll();
         } catch (_) { /* non-critical */ }
       }, 10000); /* defer 10s after init */

@@ -123,7 +123,9 @@ const AielLearning = (() => {
                   }
                 }
                 if (meta.confidence != null) {
-                  pattern.confidence = Math.max(pattern.confidence || 0, meta.confidence);
+                  /* Weighted average: blend existing and new confidence */
+                  const existing = pattern.confidence || 0;
+                  pattern.confidence = existing * 0.6 + meta.confidence * 0.4;
                 }
                 store.put(pattern);
               }

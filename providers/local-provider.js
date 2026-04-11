@@ -226,7 +226,7 @@ const AielLocalProvider = (() => {
         if (learned._shouldDefer) {
           /* Throw to let ProviderManager fall through to external provider */
           throw new AielProviderBase.AielProviderError(
-            'Confidence too low — deferring to external provider', 'local'
+            'Confidence too low -- deferring to external provider', 'local'
           );
         }
         return `💡 Based on what I've learned: ${learned.text}`;

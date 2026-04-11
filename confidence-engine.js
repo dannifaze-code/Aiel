@@ -213,8 +213,8 @@ const AielConfidenceEngine = (() => {
     const logs = interactionLog[topic] || [];
     const recentAccepted = logs.slice(-MIN_ACCEPTED_INTERACTIONS)
       .filter(l => l.accepted).length;
-    const allRecentAccepted = recentAccepted >= MIN_ACCEPTED_INTERACTIONS ||
-      logs.length < MIN_ACCEPTED_INTERACTIONS; /* allow graduation if not enough interactions yet */
+    const allRecentAccepted = logs.length >= MIN_ACCEPTED_INTERACTIONS &&
+      recentAccepted >= MIN_ACCEPTED_INTERACTIONS;
 
     let newLevel = 0;
     for (let i = MASTERY_LEVELS.length - 1; i >= 0; i--) {
@@ -309,7 +309,7 @@ const AielConfidenceEngine = (() => {
    * Apply staleness decay to all patterns.
    * Call periodically (e.g., once per session or daily).
    */
-  async function applyStalenessDec() {
+  async function applyDecay() {
     if (typeof AielLearning === 'undefined') return;
     try {
       const patterns = await AielLearning.getAllPatterns(1000);
@@ -470,7 +470,7 @@ const AielConfidenceEngine = (() => {
     recordInteraction,
     onCrossValidation,
     demoteTopic,
-    applyStalenessDec,
+    applyDecay,
     checkMilestones,
     getStatus,
     getAllTopicMastery,
