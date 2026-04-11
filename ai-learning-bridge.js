@@ -111,7 +111,14 @@ const AielLearningBridge = (() => {
             };
 
             const ok = await AielKnowledgeIngestor.ingestText(item);
-            if (ok) ingested++;
+            if (ok) {
+              ingested++;
+              /* Also store as pattern with source metadata */
+              const kw = AielDataFetcher.extractKeywordsFromText(`${topic} ${question}`);
+              await AielLearning.learnPattern(question, answer.trim(), kw, {
+                source: 'chrome-ai', confidence: 0.4, topic
+              });
+            }
           }
         } catch (_) { /* skip failed question */ }
       }
@@ -128,6 +135,246 @@ const AielLearningBridge = (() => {
     } catch (_) {
       return 0;
     }
+  }
+
+  /* ── Learn from Ollama ─────────────────────────────────────────────────── */
+
+  /**
+   * Query Ollama with topic questions, ingest responses into knowledge base.
+   * @param {string} topic
+   * @returns {Promise<number>} — Number of items ingested
+   */
+  async function learnFromOllama(topic) {
+    /* Check if Ollama provider is available */
+    if (typeof AielProviderManager === 'undefined') return 0;
+    const healthy = AielProviderManager.getHealthyProviders();
+    const ollama = healthy.find(p => p.name === 'ollama');
+    if (!ollama) return 0;
+
+    const questions = generateQuestions(topic).slice(0, 3);
+    let ingested = 0;
+
+    for (const question of questions) {
+      try {
+        const messages = [
+          { role: 'user', content: `You are a knowledgeable teacher. ${question} Keep your answer under 200 words.` }
+        ];
+        const answer = await ollama.generate(messages, {});
+        if (answer && answer.length > 20 && AielLearning.isValidResponse(answer)) {
+          const item = {
+            type: 'article',
+            content: {
+              title: topic,
+              summary: answer.trim(),
+              description: `AI-generated explanation of ${topic}`
+            },
+            source: 'Ollama',
+            license: 'AI-generated (local)',
+            keywords: AielDataFetcher.extractKeywordsFromText(`${topic} ${question}`),
+            hash: AielDataFetcher.simpleHash(`ollama:${topic}:${question}`),
+            timestamp: Date.now()
+          };
+
+          const ok = await AielKnowledgeIngestor.ingestText(item);
+          if (ok) {
+            ingested++;
+            const kw = AielDataFetcher.extractKeywordsFromText(`${topic} ${question}`);
+            await AielLearning.learnPattern(question, answer.trim(), kw, {
+              source: 'ollama', confidence: 0.5, topic
+            });
+          }
+        }
+      } catch (_) { /* skip failed question */ }
+    }
+
+    if (ingested > 0) {
+      learnedTopics.add(topic);
+      await persistLearnedTopics();
+      await incrementAIStat(ingested);
+    }
+
+    return ingested;
+  }
+
+  /* ── Generic learn from any provider ───────────────────────────────────── */
+
+  /**
+   * Query a named provider with topic questions.
+   * @param {string} providerName — 'ollama', 'chrome-ai', 'openai-compat'
+   * @param {string} topic
+   * @returns {Promise<number>}
+   */
+  async function learnFromProvider(providerName, topic) {
+    if (providerName === 'chrome-ai') return learnFromChromeAI(topic);
+    if (providerName === 'ollama') return learnFromOllama(topic);
+
+    /* Generic provider path */
+    if (typeof AielProviderManager === 'undefined') return 0;
+    const healthy = AielProviderManager.getHealthyProviders();
+    const provider = healthy.find(p => p.name === providerName);
+    if (!provider) return 0;
+
+    const questions = generateQuestions(topic).slice(0, 3);
+    let ingested = 0;
+
+    for (const question of questions) {
+      try {
+        const messages = [
+          { role: 'user', content: `You are a knowledgeable teacher. ${question} Keep your answer under 200 words.` }
+        ];
+        const answer = await provider.generate(messages, {});
+        if (answer && answer.length > 20 && AielLearning.isValidResponse(answer)) {
+          const item = {
+            type: 'article',
+            content: { title: topic, summary: answer.trim(), description: `AI explanation of ${topic}` },
+            source: provider.displayName || providerName,
+            license: 'AI-generated',
+            keywords: AielDataFetcher.extractKeywordsFromText(`${topic} ${question}`),
+            hash: AielDataFetcher.simpleHash(`${providerName}:${topic}:${question}`),
+            timestamp: Date.now()
+          };
+          const ok = await AielKnowledgeIngestor.ingestText(item);
+          if (ok) {
+            ingested++;
+            const kw = AielDataFetcher.extractKeywordsFromText(`${topic} ${question}`);
+            await AielLearning.learnPattern(question, answer.trim(), kw, {
+              source: providerName, confidence: 0.4, topic
+            });
+          }
+        }
+      } catch (_) { /* skip */ }
+    }
+
+    if (ingested > 0) {
+      learnedTopics.add(topic);
+      await persistLearnedTopics();
+      await incrementAIStat(ingested);
+    }
+    return ingested;
+  }
+
+  /* ── Tandem Learning ───────────────────────────────────────────────────── */
+
+  let tandemEnabled = false;
+  let tandemIdleTimer = null;
+  let tandemQueue = [];
+  const TANDEM_IDLE_DELAY_MS = 30000;
+
+  /**
+   * Per-message tandem learning: fire background query to secondary provider.
+   * Compares answers and stores cross-validated knowledge.
+   * @param {string} userInput — The user's message
+   * @param {string} primaryAnswer — The primary provider's answer
+   * @param {string} primaryProvider — Name of the provider that answered
+   */
+  async function tandemLearnFromMessage(userInput, primaryAnswer, primaryProvider) {
+    if (!tandemEnabled) return;
+    if (typeof AielProviderManager === 'undefined') return;
+
+    const healthy = AielProviderManager.getHealthyProviders();
+    const secondary = healthy.find(p => p.name !== primaryProvider && p.name !== 'local');
+    if (!secondary) return;
+
+    /* Non-blocking background query */
+    try {
+      const messages = [{ role: 'user', content: userInput }];
+      const secondaryAnswer = await secondary.generate(messages, {});
+
+      if (secondaryAnswer && secondaryAnswer.length > 20 && AielLearning.isValidResponse(secondaryAnswer)) {
+        /* Both providers answered — cross-validate */
+        const overlap = computeOverlap(primaryAnswer, secondaryAnswer);
+        const confidence = overlap > 0.7 ? 0.7 : overlap > 0.4 ? 0.5 : 0.3;
+
+        const kw = AielLearning.extractKeywords(userInput);
+        const topicWords = kw.slice(0, 3).join(' ') || 'general';
+
+        /* Store the secondary answer with higher confidence if consistent */
+        await AielLearning.learnPattern(userInput, secondaryAnswer, kw, {
+          source: secondary.name, confidence, topic: topicWords
+        });
+
+        /* Update confidence engine if available */
+        if (typeof AielConfidenceEngine !== 'undefined') {
+          AielConfidenceEngine.onCrossValidation(topicWords, overlap);
+        }
+      }
+    } catch (_) { /* tandem learning is non-critical */ }
+  }
+
+  /**
+   * Start idle-time tandem learning.
+   * Runs when user hasn't chatted for 30+ seconds.
+   */
+  function scheduleTandemIdle() {
+    clearTandemIdle();
+    if (!tandemEnabled) return;
+
+    tandemIdleTimer = setTimeout(async () => {
+      await processTandemQueue();
+    }, TANDEM_IDLE_DELAY_MS);
+  }
+
+  function clearTandemIdle() {
+    if (tandemIdleTimer) {
+      clearTimeout(tandemIdleTimer);
+      tandemIdleTimer = null;
+    }
+  }
+
+  /**
+   * Process the idle tandem queue: pick unlearned topics and query all providers.
+   */
+  async function processTandemQueue() {
+    if (typeof AielProviderManager === 'undefined') return;
+    const healthy = AielProviderManager.getHealthyProviders().filter(p => p.name !== 'local');
+    if (healthy.length < 1) return;
+
+    /* Pick up to 2 unlearned topics */
+    const topics = [];
+    for (let i = 0; i < 2; i++) {
+      const topic = pickNewTopic();
+      if (topic) topics.push(topic);
+    }
+
+    for (const topic of topics) {
+      for (const provider of healthy) {
+        try {
+          await learnFromProvider(provider.name, topic);
+        } catch (_) { /* skip */ }
+      }
+      /* Cross-validate if learned from 2+ providers */
+      await crossValidate(topic);
+    }
+
+    /* Reschedule if still idle */
+    if (tandemEnabled) {
+      tandemIdleTimer = setTimeout(() => processTandemQueue(), TANDEM_IDLE_DELAY_MS * 2);
+    }
+  }
+
+  /**
+   * Compute word overlap ratio between two texts (0-1).
+   * @param {string} a
+   * @param {string} b
+   * @returns {number}
+   */
+  function computeOverlap(a, b) {
+    const wordsA = new Set(a.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 2));
+    const wordsB = new Set(b.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 2));
+    if (wordsA.size === 0 || wordsB.size === 0) return 0;
+    let overlap = 0;
+    for (const w of wordsA) { if (wordsB.has(w)) overlap++; }
+    return (2 * overlap) / (wordsA.size + wordsB.size);
+  }
+
+  function setTandemEnabled(enabled) {
+    tandemEnabled = enabled;
+    if (enabled) scheduleTandemIdle();
+    else clearTandemIdle();
+  }
+
+  function isTandemEnabled() {
+    return tandemEnabled;
   }
 
   /* ── Learn from self (Transformers.js / local engine) ──────────────────── */
@@ -225,9 +472,17 @@ const AielLearningBridge = (() => {
     generateQuestions,
     pickNewTopic,
     learnFromChromeAI,
+    learnFromOllama,
+    learnFromProvider,
     learnFromSelf,
     crossValidate,
-    getLearnedTopicCount
+    getLearnedTopicCount,
+    /* Tandem learning */
+    tandemLearnFromMessage,
+    scheduleTandemIdle,
+    clearTandemIdle,
+    setTandemEnabled,
+    isTandemEnabled
   };
 })();
 

@@ -219,9 +219,18 @@ const AielLocalProvider = (() => {
         if (hardcoded !== null) return hardcoded;
       }
 
-      /* 2. Check learned patterns */
+      /* 2. Check learned patterns — with confidence-based self-sufficiency */
       const learned = await this._checkPatterns(input);
-      if (learned) return `💡 Based on what I've learned: ${learned}`;
+      if (learned) {
+        /* If confidence engine says we need external validation, skip this */
+        if (learned._shouldDefer) {
+          /* Throw to let ProviderManager fall through to external provider */
+          throw new AielProviderBase.AielProviderError(
+            'Confidence too low -- deferring to external provider', 'local'
+          );
+        }
+        return `💡 Based on what I've learned: ${learned.text}`;
+      }
 
       /* 3. Check knowledge base */
       const knowledge = await this._checkKnowledge(input);
@@ -360,7 +369,17 @@ const AielLocalProvider = (() => {
         const result = await AielLearning.findPattern(input);
         if (result && result.score > 0.7) {
           if (typeof AielMood !== 'undefined') AielMood.onPatternMatched(result.score);
-          return result.response;
+
+          /* Consult confidence engine for self-sufficiency check */
+          if (typeof AielConfidenceEngine !== 'undefined' && result.topic) {
+            const decision = AielConfidenceEngine.shouldQueryExternal(result.topic);
+            if (decision.shouldQuery && decision.level <= 1) {
+              /* Topic not yet mastered enough — defer to external */
+              return { text: result.response, _shouldDefer: true };
+            }
+          }
+
+          return { text: result.response, _shouldDefer: false };
         }
       } catch (_) { /* non-critical */ }
       return null;

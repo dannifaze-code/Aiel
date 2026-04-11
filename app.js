@@ -39,6 +39,8 @@
   let uploadedImages    = [];
   let sidebarCollapsed  = window.innerWidth < 768;
   let darkMode          = true;
+  let lastResponseTimestamp = 0;
+  let lastTopicWords    = '';
 
   /* ── Init ───────────────────────────────────────────────────────────────── */
 
@@ -57,6 +59,7 @@
     initMoodSystem();
     initGraphPanel();
     initFeedAIButton();
+    initConfidenceEngine();
   }
 
   /* ── Landing page ───────────────────────────────────────────────────────── */
@@ -365,6 +368,14 @@
     sendBtn.disabled = true;
     setAIStatus('busy', 'Thinking…');
 
+    /* Rephrase detection — if user sends within 30s, treat as negative feedback */
+    const now = Date.now();
+    if (lastResponseTimestamp && (now - lastResponseTimestamp) < 30000 && lastTopicWords) {
+      if (typeof AielConfidenceEngine !== 'undefined') {
+        AielConfidenceEngine.recordInteraction(lastTopicWords, false);
+      }
+    }
+
     /* Show typing indicator */
     const typingEl = addTypingIndicator();
 
@@ -401,10 +412,29 @@
        * quality validation to prevent poisoning the pattern database with
        * garbage outputs (URLs, JSON fragments, etc.). */
       const keywords = AielLearning.extractKeywords(userInput);
+      const activeProvider = typeof AielProviderManager !== 'undefined'
+        ? AielProviderManager.getActiveProvider() : 'local';
+      const topicWords = keywords.slice(0, 3).join(' ') || 'general';
+
       if (AielLearning.isValidResponse(fullResponse)) {
-        await AielLearning.learnPattern(userInput, fullResponse, keywords);
+        await AielLearning.learnPattern(userInput, fullResponse, keywords, {
+          source: activeProvider,
+          confidence: 0.3,
+          topic: topicWords
+        });
       }
       triggerLearningIndicator();
+
+      /* Record interaction with confidence engine */
+      if (typeof AielConfidenceEngine !== 'undefined') {
+        AielConfidenceEngine.recordInteraction(topicWords, true);
+      }
+
+      /* Tandem learning — background query to secondary provider */
+      if (typeof AielLearningBridge !== 'undefined') {
+        AielLearningBridge.tandemLearnFromMessage(userInput, fullResponse, activeProvider);
+        AielLearningBridge.scheduleTandemIdle();
+      }
 
       /* Check if it was code */
       if (currentMode === 'code' || /```/.test(fullResponse)) {
@@ -413,6 +443,10 @@
       }
 
       await updateMemoryStats();
+
+      /* Track for rephrase detection */
+      lastResponseTimestamp = Date.now();
+      lastTopicWords = topicWords;
 
     } catch (err) {
       typingEl?.remove();
@@ -1137,13 +1171,28 @@
           baseUrl: $('#openai-compat-url')?.value || '',
           apiKey: $('#openai-compat-key')?.value || '',
           model: $('#openai-compat-model')?.value || ''
-        }
+        },
+        chromeAI: {
+          enabled: $('#chrome-ai-toggle')?.classList.contains('on') ?? true
+        },
+        local: {
+          enabled: $('#local-engine-toggle')?.classList.contains('on') ?? true
+        },
+        strategy: $('#routing-strategy')?.value || 'balanced'
       };
+
+      /* Save tandem learning preference */
+      const tandemOn = $('#tandem-learning-toggle')?.classList.contains('on') ?? false;
+      if (typeof AielLearningBridge !== 'undefined') {
+        AielLearningBridge.setTandemEnabled(tandemOn);
+      }
+      await AielLearning.setPreference('tandemLearningEnabled', tandemOn);
 
       try {
         setAIStatus('busy', 'Saving provider config…');
         await AielEngine.updateProviderConfig(config);
         updateProviderStatusDisplay();
+        updateSelfSufficiencyDisplay();
         setAIStatus('ready', `${AielEngine.backend} engine`);
         showToast('💾 Provider settings saved', 'success');
       } catch (err) {
@@ -1161,10 +1210,23 @@
       this.classList.toggle('on');
       this.setAttribute('aria-checked', this.classList.contains('on'));
     });
+    $('#chrome-ai-toggle')?.addEventListener('click', function() {
+      this.classList.toggle('on');
+      this.setAttribute('aria-checked', this.classList.contains('on'));
+    });
+    $('#local-engine-toggle')?.addEventListener('click', function() {
+      this.classList.toggle('on');
+      this.setAttribute('aria-checked', this.classList.contains('on'));
+    });
+    $('#tandem-learning-toggle')?.addEventListener('click', function() {
+      this.classList.toggle('on');
+      this.setAttribute('aria-checked', this.classList.contains('on'));
+    });
 
     /* Listen for provider switch events */
     window.addEventListener('aiel-provider-switch', (e) => {
       setAIStatus('busy', `Using ${e.detail.displayName}…`);
+      updateProviderStatusDisplay();
     });
 
     window.addEventListener('aiel-provider-fallback', (e) => {
@@ -1201,8 +1263,71 @@
           if (config.openaiCompat.baseUrl) $('#openai-compat-url').value = config.openaiCompat.baseUrl;
           if (config.openaiCompat.model) $('#openai-compat-model').value = config.openaiCompat.model;
         }
+
+        /* Chrome AI */
+        if (config.chromeAI) {
+          const toggle = $('#chrome-ai-toggle');
+          if (toggle) {
+            toggle.classList.toggle('on', config.chromeAI.enabled !== false);
+            toggle.setAttribute('aria-checked', (config.chromeAI.enabled !== false).toString());
+          }
+        }
+
+        /* Local Engine */
+        if (config.local) {
+          const toggle = $('#local-engine-toggle');
+          if (toggle) {
+            toggle.classList.toggle('on', config.local.enabled !== false);
+            toggle.setAttribute('aria-checked', (config.local.enabled !== false).toString());
+          }
+        }
+
+        /* Routing strategy */
+        const strategySelect = $('#routing-strategy');
+        if (strategySelect && config.strategy) {
+          strategySelect.value = config.strategy;
+        }
       }
+
+      /* Tandem learning toggle */
+      const tandemPref = await AielLearning.getPreference('tandemLearningEnabled', false);
+      const tandemToggle = $('#tandem-learning-toggle');
+      if (tandemToggle) {
+        tandemToggle.classList.toggle('on', tandemPref);
+        tandemToggle.setAttribute('aria-checked', tandemPref.toString());
+      }
+
+      /* Self-sufficiency display */
+      updateSelfSufficiencyDisplay();
     } catch (_) { /* first run */ }
+  }
+
+  /**
+   * Update the self-sufficiency status display in settings.
+   */
+  function updateSelfSufficiencyDisplay() {
+    const el = $('#self-sufficiency-status');
+    if (!el) return;
+    if (typeof AielConfidenceEngine === 'undefined') {
+      el.textContent = 'Confidence engine not loaded.';
+      return;
+    }
+    try {
+      const status = AielConfidenceEngine.getStatus();
+      const l = status.levels;
+      const localPct = status.queryStats.total > 0
+        ? Math.round(status.localRate * 100)
+        : 0;
+      el.innerHTML = `
+        <div>📊 Topics tracked: <strong>${status.totalTopics}</strong></div>
+        <div>🔴 Unknown: ${l.unknown || 0} | 📖 Learning: ${l.learning || 0}</div>
+        <div>🟡 Familiar: ${l.familiar || 0} | 🟢 Confident: ${l.confident || 0}</div>
+        <div>🏆 Mastered: <strong>${l.mastered || 0}</strong></div>
+        <div>⚡ Local answer rate: <strong>${localPct}%</strong> (${status.queryStats.local}/${status.queryStats.total})</div>
+      `;
+    } catch (_) {
+      el.textContent = 'Status unavailable.';
+    }
   }
 
   function updateProviderStatusDisplay() {
@@ -1521,6 +1646,34 @@
         await AielMood.init();
       } catch (_) { /* mood is optional */ }
     }
+  }
+
+  /* ── Confidence engine init ─────────────────────────────────────────────── */
+
+  async function initConfidenceEngine() {
+    if (typeof AielConfidenceEngine === 'undefined') return;
+    try {
+      await AielConfidenceEngine.init();
+
+      /* Listen for milestone events */
+      window.addEventListener('aiel-milestone', (e) => {
+        showToast(e.detail.message, 'success');
+      });
+
+      /* Restore tandem learning preference */
+      const tandemPref = await AielLearning.getPreference('tandemLearningEnabled', false);
+      if (typeof AielLearningBridge !== 'undefined') {
+        AielLearningBridge.setTandemEnabled(tandemPref);
+      }
+
+      /* Run staleness decay and batch recompute once per session */
+      setTimeout(async () => {
+        try {
+          await AielConfidenceEngine.applyDecay();
+          await AielConfidenceEngine.recomputeAll();
+        } catch (_) { /* non-critical */ }
+      }, 10000); /* defer 10s after init */
+    } catch (_) { /* confidence engine is optional */ }
   }
 
   /* ── Graph panel init ──────────────────────────────────────────────────── */
