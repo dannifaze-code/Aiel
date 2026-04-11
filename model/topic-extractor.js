@@ -104,7 +104,10 @@ const AielTopicExtractor = (() => {
     }
 
     /* Normalize TF */
-    const maxTf = Math.max(...Object.values(tf), 1);
+    let maxTf = 1;
+    for (const count of Object.values(tf)) {
+      if (count > maxTf) maxTf = count;
+    }
 
     /* Score each term */
     const scored = [];

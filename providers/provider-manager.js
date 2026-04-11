@@ -221,8 +221,8 @@ const AielProviderManager = (() => {
     }
 
     /* All providers failed — yield an error message */
-    yield "⚠️ I'm having trouble connecting to any AI provider right now. " +
-      "My local engine should still work — try asking me again!";
+    yield "⚠️ I'm having trouble generating a response right now. " +
+      "Please try again in a moment, or rephrase your question!";
   }
 
   /* ── Configuration ─────────────────────────────────────────────────────── */

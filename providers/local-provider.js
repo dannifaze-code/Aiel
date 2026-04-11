@@ -398,8 +398,8 @@ const AielLocalProvider = (() => {
           if (snippets.length > 0) {
             const inputLower = input.toLowerCase();
             const match = snippets.find(s =>
-              s.prompt && inputLower.includes(s.language?.toLowerCase()) ||
-              (s.prompt && inputLower.split(/\s+/).some(w => s.prompt.toLowerCase().includes(w)))
+              s.prompt && (inputLower.includes(s.language?.toLowerCase()) ||
+              inputLower.split(/\s+/).some(w => s.prompt.toLowerCase().includes(w)))
             );
             if (match) {
               return `Here's a ${match.language || ''} snippet I've learned:\n\n${match.code}`;
