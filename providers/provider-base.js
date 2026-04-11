@@ -236,11 +236,16 @@ const AielProviderBase = (() => {
         if (this._available) {
           this._latencyMs = Date.now() - start;
           this.circuit.onSuccess();
+        } else {
+          this._latencyMs = 9999;
+          this.circuit.onFailure();
         }
-      } catch (_) {
+      } catch (err) {
+        console.warn(`[Aiel] Probe error for ${this.name}:`, err.message || String(err));
         this._available = false;
         this._healthy = false;
         this._latencyMs = 9999;
+        this.circuit.onFailure();
       }
       return this._available;
     }
